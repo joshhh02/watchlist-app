@@ -2,6 +2,9 @@ import cors from "cors";
 import express from "express";
 
 import authRoutes from "./routes/authRoutes";
+import mediaRoutes from "./routes/mediaRoutes";
+import watchlistRoutes from "./routes/watchlistRoutes";
+import commentRoutes from "./routes/commentRoutes";
 
 const app = express();
 
@@ -13,5 +16,8 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/media", mediaRoutes);
+app.use("/api/watchlist", watchlistRoutes);
+app.use("/api/comments", commentRoutes);
 
 export default app;
