@@ -1,20 +1,28 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import { getMediaById, getComments, addComment } from '../api/mediaApi';
+import { getMediaById, getComments, addComment, Media, Comment } from '../api/mediaApi';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/mediadetail.css';
 
 const MediaDetail = () => {
-  const { id } = useParams();
-  const [media, setMedia] = useState(null);
-  const [comments, setComments] = useState([]);
+  const { id } = useParams<{ id: string }>();
+  const [media, setMedia] = useState<Media | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { user } = useContext(AuthContext);
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    return <div>Loading...</div>;
+  }
+
+  const { user } = context;
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) return;
+
       try {
         const mediaResponse = await getMediaById(id);
         setMedia(mediaResponse.data);
@@ -31,9 +39,9 @@ const MediaDetail = () => {
     fetchData();
   }, [id]);
 
-  const handleAddComment = async (e) => {
+  const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !user || !id) return;
 
     try {
       const response = await addComment({

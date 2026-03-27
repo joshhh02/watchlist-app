@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMedia } from '../api/mediaApi';
+import { getMedia, Media } from '../api/mediaApi';
 import MediaCard from '../components/MediaCard';
 import SearchBar from '../components/SearchBar';
 import '../styles/home.css';
 
 const Home = () => {
-  const [media, setMedia] = useState([]);
-  const [filteredMedia, setFilteredMedia] = useState([]);
+  const [media, setMedia] = useState<Media[]>([]);
+  const [filteredMedia, setFilteredMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const Home = () => {
     fetchMedia();
   }, []);
 
-  const handleSearch = (query) => {
+  const handleSearch = (query: string) => {
     if (!query.trim()) {
       setFilteredMedia(media);
       return;
@@ -42,7 +42,7 @@ const Home = () => {
     setFilteredMedia(filtered);
   };
 
-  const handleViewDetails = (mediaId) => {
+  const handleViewDetails = (mediaId: string) => {
     navigate(`/media/${mediaId}`);
   };
 

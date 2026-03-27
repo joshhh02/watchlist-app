@@ -1,6 +1,12 @@
 import '../styles/mediacard.css';
+import { Media } from '../api/mediaApi';
 
-const MediaCard = ({ media, onViewDetails }) => {
+interface MediaCardProps {
+  media: Media;
+  onViewDetails: (mediaId: string) => void;
+}
+
+const MediaCard = ({ media, onViewDetails }: MediaCardProps) => {
   return (
     <div className="media-card">
       <div className="media-poster">

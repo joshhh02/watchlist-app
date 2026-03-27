@@ -4,8 +4,14 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/navbar.css';
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const context = useContext(AuthContext);
   const navigate = useNavigate();
+
+  if (!context) {
+    return <nav>Loading...</nav>;
+  }
+
+  const { isAuthenticated, user, logout } = context;
 
   const handleLogout = () => {
     logout();

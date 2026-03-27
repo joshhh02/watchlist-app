@@ -1,15 +1,21 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getWatchlist } from '../api/mediaApi';
+import { getWatchlist, WatchlistItem } from '../api/mediaApi';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/watchlist.css';
 
 const Watchlist = () => {
-  const [watchlistItems, setWatchlistItems] = useState([]);
+  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { user } = useContext(AuthContext);
+  const context = useContext(AuthContext);
   const navigate = useNavigate();
+
+  if (!context) {
+    return <div>Loading...</div>;
+  }
+
+  const { user } = context;
 
   useEffect(() => {
     const fetchWatchlist = async () => {

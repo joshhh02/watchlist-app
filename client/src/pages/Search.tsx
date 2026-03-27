@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMedia } from '../api/mediaApi';
+import { getMedia, Media } from '../api/mediaApi';
 import MediaCard from '../components/MediaCard';
 import SearchBar from '../components/SearchBar';
 import '../styles/search.css';
 
 const Search = () => {
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<Media[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSearch = async (query) => {
+  const handleSearch = async (query: string) => {
     if (!query.trim()) {
       setResults([]);
       setSearched(false);
@@ -36,7 +36,7 @@ const Search = () => {
     }
   };
 
-  const handleViewDetails = (mediaId) => {
+  const handleViewDetails = (mediaId: string) => {
     navigate(`/media/${mediaId}`);
   };
 
