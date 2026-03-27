@@ -11,9 +11,11 @@ const app = express();
 
 // Enhanced CORS configuration
 const allowedOrigins = [
-	"http://localhost:5173", // Vite dev server
-	"http://localhost:5001", // Local production
-	"http://poosdproject.space:5001", // Production server
+	"http://localhost:5173",
+	"http://localhost:5001",
+	"http://poosdproject.space",
+	"https://poosdproject.space",
+	"http://poosdproject.space:5001",
 	"https://poosdproject.space:5001",
 ];
 
@@ -32,9 +34,6 @@ app.use(
 
 app.use(express.json());
 
-app.get("/*", (_req, res) => {
-	res.json({ message: "Server is running" });
-});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/media", mediaRoutes);
@@ -44,8 +43,11 @@ app.use("/api/comments", commentRoutes);
 // Serve static files from the client dist folder
 app.use(express.static(path.join(__dirname, "../../client/dist")));
 
-// Fallback route for SPA routing - serve index.html for any non-API route
-app.get("*", (_req, res) => {
+app.use((req, res) => {
+	if (req.path.startsWith("/api")) {
+		return res.status(404).json({ error: "API route not found" });
+	}
+
 	res.sendFile(path.join(__dirname, "../../client/dist/index.html"));
 });
 
