@@ -9,7 +9,27 @@ import commentRoutes from "./routes/commentRoutes";
 
 const app = express();
 
-app.use(cors());
+// Enhanced CORS configuration
+const allowedOrigins = [
+	"http://localhost:5173", // Vite dev server
+	"http://localhost:5001", // Local production
+	"http://poosdproject.space:5001", // Production server
+	"https://poosdproject.space:5001",
+];
+
+app.use(
+	cors({
+		origin: (origin, callback) => {
+			if (!origin || allowedOrigins.includes(origin)) {
+				callback(null, true);
+			} else {
+				callback(new Error("Not allowed by CORS"));
+			}
+		},
+		credentials: true,
+	})
+);
+
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
