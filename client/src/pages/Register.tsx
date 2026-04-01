@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/auth.css';
 
 const Register = () => {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,7 +37,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await registerUser(email, password);
+      const response = await registerUser(username, email, password);
       const { user, token } = response.data;
       login(user, token);
       navigate('/');
@@ -54,6 +55,16 @@ const Register = () => {
         <h2>Register</h2>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
           <div className="form-group">
             <label>Email</label>
             <input
