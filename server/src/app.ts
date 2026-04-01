@@ -14,10 +14,8 @@ const app = express();
 const allowedOrigins = [
 	"http://localhost:5173",
 	"http://localhost:5001",
-	"http://poosdproject.space",
-	"https://poosdproject.space",
-	"http://poosdproject.space:5001",
-	"https://poosdproject.space:5001",
+	"http://192.241.131.53",
+	"http://192.241.131.53:5001",
 ];
 
 app.use(
