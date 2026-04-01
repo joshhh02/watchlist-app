@@ -1,43 +1,44 @@
 import { Router, Response } from "express";
-import Comment from "../models/Comment";
+import Review from "../models/Comment";
 import { authenticate, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
-// Get comments for a media
-router.get("/:mediaId", async (req: AuthRequest, res: Response) => {
+// Get reviews for a media item (by imdbID)
+router.get("/:imdbID", async (req: AuthRequest, res: Response) => {
 	try {
-		const comments = await Comment.find({ mediaId: req.params.mediaId }).populate(
+		const reviews = await Review.find({ imdbID: req.params.imdbID }).populate(
 			"userId",
-			"email"
+			"username email"
 		);
-		res.status(200).json(comments);
+		res.status(200).json(reviews);
 	} catch (error) {
-		res.status(500).json({ message: "Failed to fetch comments", error });
+		res.status(500).json({ message: "Failed to fetch reviews", error });
 	}
 });
 
-// Add comment
+// Add a review
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { mediaId, commentText, rating } = req.body;
+		const { imdbID, reviewText, rating } = req.body;
 		const userId = req.user?.id;
 
-		if (!mediaId || !commentText || !userId) {
+		if (!imdbID || !reviewText || !userId) {
 			return res.status(400).json({ message: "Missing required fields" });
 		}
 
-		const newComment = new Comment({
+		const newReview = new Review({
 			userId,
-			mediaId,
-			commentText,
+			imdbID,
+			reviewText,
 			rating,
 		});
 
-		await newComment.save();
-		res.status(201).json({ message: "Comment added", data: newComment });
+		await newReview.save();
+		await newReview.populate("userId", "username email");
+		res.status(201).json({ message: "Review added", data: newReview });
 	} catch (error) {
-		res.status(500).json({ message: "Failed to add comment", error });
+		res.status(500).json({ message: "Failed to add review", error });
 	}
 });
 

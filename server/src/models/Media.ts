@@ -2,27 +2,15 @@ import mongoose from "mongoose";
 
 const mediaSchema = new mongoose.Schema(
 	{
+		imdbID: {
+			type: String,
+			required: true,
+			unique: true,
+			trim: true,
+		},
 		title: {
 			type: String,
 			required: true,
-		},
-		type: {
-			type: String,
-			enum: ["movie", "tv", "anime"],
-			required: true,
-		},
-		genres: {
-			type: [String],
-			default: [],
-		},
-		releaseYear: {
-			type: Number,
-		},
-		description: {
-			type: String,
-		},
-		posterUrl: {
-			type: String,
 		},
 	},
 	{
@@ -30,4 +18,4 @@ const mediaSchema = new mongoose.Schema(
 	}
 );
 
-export default mongoose.model("Media", mediaSchema);
+export default mongoose.model("Media", mediaSchema, "media");

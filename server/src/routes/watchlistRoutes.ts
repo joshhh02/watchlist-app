@@ -7,9 +7,7 @@ const router = Router();
 // Get user's watchlist
 router.get("/:userId", async (req: AuthRequest, res: Response) => {
 	try {
-		const watchlist = await Watchlist.find({ userId: req.params.userId }).populate(
-			"mediaId"
-		);
+		const watchlist = await Watchlist.find({ userId: req.params.userId });
 		res.status(200).json(watchlist);
 	} catch (error) {
 		res.status(500).json({ message: "Failed to fetch watchlist", error });
@@ -19,23 +17,23 @@ router.get("/:userId", async (req: AuthRequest, res: Response) => {
 // Add to watchlist
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { mediaId, status, rating } = req.body;
+		const { imdbID, status, userRating } = req.body;
 		const userId = req.user?.id;
 
-		if (!mediaId || !userId) {
-			return res.status(400).json({ message: "MediaId and userId are required" });
+		if (!imdbID || !userId) {
+			return res.status(400).json({ message: "imdbID and userId are required" });
 		}
 
-		const existingItem = await Watchlist.findOne({ userId, mediaId });
+		const existingItem = await Watchlist.findOne({ userId, imdbID });
 		if (existingItem) {
 			return res.status(400).json({ message: "Item already in watchlist" });
 		}
 
 		const watchlistItem = new Watchlist({
 			userId,
-			mediaId,
+			imdbID,
 			status: status || "plan_to_watch",
-			rating,
+			userRating,
 		});
 
 		await watchlistItem.save();
@@ -48,11 +46,11 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 // Update watchlist item
 router.put("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { status, rating } = req.body;
+		const { status, userRating } = req.body;
 
 		const watchlistItem = await Watchlist.findByIdAndUpdate(
 			req.params.id,
-			{ status, rating },
+			{ status, userRating },
 			{ new: true }
 		);
 
