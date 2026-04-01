@@ -56,23 +56,18 @@ router.get("/search", async (req: Request, res: ExpressResponse) => {
 });
 
 // GET /api/media/:imdbID
-// Returns media from MongoDB if it exists; otherwise fetches from OMDb, saves, and returns it.
+// Returns media detail. Always fetches full data from OMDb for display fields.
+// Upserts imdbID + title into MongoDB for reference. Does not store extra fields.
 router.get("/:imdbID", async (req: Request, res: ExpressResponse) => {
 	try {
 		const { imdbID } = req.params;
 
-		// Return from DB if already stored
-		const existing = await Media.findOne({ imdbID });
-		if (existing) {
-			return res.status(200).json(existing);
-		}
-
-		// Fetch from OMDb
 		const apiKey = getOmdbApiKey();
 		if (!apiKey) {
 			return res.status(500).json({ message: "OMDb API key is not configured" });
 		}
 
+		// Fetch full detail from OMDb
 		let omdbData: Record<string, unknown>;
 		try {
 			const omdbRes = await fetch(
@@ -92,14 +87,31 @@ router.get("/:imdbID", async (req: Request, res: ExpressResponse) => {
 				.json({ message: (omdbData["Error"] as string) || "Media not found" });
 		}
 
-		// Store only the fields our schema requires
-		const newMedia = new Media({
-			imdbID: omdbData["imdbID"],
-			title: omdbData["Title"],
-		});
-		await newMedia.save();
+		// Upsert into DB (store only imdbID + title)
+		let dbMedia = await Media.findOne({ imdbID });
+		if (!dbMedia) {
+			dbMedia = new Media({
+				imdbID: omdbData["imdbID"],
+				title: omdbData["Title"],
+			});
+			await dbMedia.save();
+		}
 
-		return res.status(200).json(newMedia);
+		// Return DB doc merged with OMDb display fields
+		return res.status(200).json({
+			_id: dbMedia._id,
+			imdbID: dbMedia.imdbID,
+			title: dbMedia.title,
+			createdAt: dbMedia.createdAt,
+			year: omdbData["Year"],
+			type: omdbData["Type"],
+			genres:
+				typeof omdbData["Genre"] === "string"
+					? (omdbData["Genre"] as string).split(", ")
+					: [],
+			poster: omdbData["Poster"],
+			description: omdbData["Plot"],
+		});
 	} catch (error) {
 		console.error("Media fetch error:", error);
 		res.status(500).json({ message: "Failed to fetch media" });
