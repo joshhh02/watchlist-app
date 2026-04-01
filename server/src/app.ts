@@ -5,7 +5,8 @@ import path from "path";
 import authRoutes from "./routes/authRoutes";
 import mediaRoutes from "./routes/mediaRoutes";
 import watchlistRoutes from "./routes/watchlistRoutes";
-import commentRoutes from "./routes/commentRoutes";
+import reviewRoutes from "./routes/commentRoutes";
+import reviewCommentRoutes from "./routes/reviewCommentRoutes";
 
 const app = express();
 
@@ -38,7 +39,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/watchlist", watchlistRoutes);
-app.use("/api/comments", commentRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/review-comments", reviewCommentRoutes);
 
 // Serve static files from the client dist folder
 app.use(express.static(path.join(__dirname, "../../client/dist")));

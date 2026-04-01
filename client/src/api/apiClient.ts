@@ -1,6 +1,7 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = 'http://poosdproject.space:5001/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -9,12 +10,16 @@ const apiClient = axios.create({
   },
 });
 
-// Add token to request headers if it exists
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: AxiosRequestConfig) => {
   const token = localStorage.getItem('authToken');
+
   if (token) {
+    if (!config.headers) {
+      config.headers = {};
+    }
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 

@@ -1,25 +1,25 @@
 import mongoose from "mongoose";
 
-const commentSchema = new mongoose.Schema(
+// This model maps to the 'reviews' collection in MongoDB
+const reviewSchema = new mongoose.Schema(
 	{
 		userId: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",
 			required: true,
 		},
-		mediaId: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: "Media",
+		imdbID: {
+			type: String,
 			required: true,
 		},
-		commentText: {
+		reviewText: {
 			type: String,
 			required: true,
 		},
 		rating: {
 			type: Number,
 			min: 1,
-			max: 5,
+			max: 10,
 		},
 	},
 	{
@@ -27,4 +27,4 @@ const commentSchema = new mongoose.Schema(
 	}
 );
 
-export default mongoose.model("Comment", commentSchema);
+export default mongoose.model("Review", reviewSchema, "reviews");

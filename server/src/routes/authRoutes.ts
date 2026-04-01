@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
 
@@ -7,18 +8,25 @@ const router = Router();
 // Register
 router.post("/register", async (req: Request, res: Response) => {
 	try {
-		const { email, password } = req.body;
+		const { username, email, password, profileVisibility } = req.body;
 
-		if (!email || !password) {
-			return res.status(400).json({ message: "Email and password are required" });
+		if (!username || !email || !password) {
+			return res.status(400).json({ message: "Username, email, and password are required" });
 		}
 
-		const existingUser = await User.findOne({ email });
+		const existingUser = await User.findOne({ $or: [{ email }, { username }] });
 		if (existingUser) {
 			return res.status(400).json({ message: "User already exists" });
 		}
 
-		const newUser = new User({ email, password });
+		const passwordHash = await bcryptjs.hash(password, 10);
+
+		const newUser = new User({
+			username,
+			email,
+			passwordHash,
+			profileVisibility: profileVisibility || "public",
+		});
 		await newUser.save();
 
 		const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET || "secret", {
@@ -27,7 +35,7 @@ router.post("/register", async (req: Request, res: Response) => {
 
 		res.status(201).json({
 			message: "User registered successfully",
-			user: { _id: newUser._id, email: newUser.email },
+			user: { _id: newUser._id, username: newUser.username, email: newUser.email },
 			token,
 		});
 	} catch (error) {
@@ -61,7 +69,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
 		res.status(200).json({
 			message: "Login successful",
-			user: { _id: user._id, email: user.email },
+			user: { _id: user._id, username: user.username, email: user.email },
 			token,
 		});
 	} catch (error) {
