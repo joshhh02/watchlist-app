@@ -87,15 +87,25 @@ router.get("/:imdbID", async (req: Request, res: ExpressResponse) => {
 				.json({ message: (omdbData["Error"] as string) || "Media not found" });
 		}
 
-		// Upsert into DB (store only imdbID + title)
-		let dbMedia = await Media.findOne({ imdbID });
-		if (!dbMedia) {
-			dbMedia = new Media({
+				// Upsert into DB (store imdbID + title + poster)
+		const posterValue =
+			typeof omdbData["Poster"] === "string" && omdbData["Poster"] !== "N/A"
+				? omdbData["Poster"]
+				: "";
+
+		const dbMedia = await Media.findOneAndUpdate(
+			{ imdbID },
+			{
 				imdbID: omdbData["imdbID"],
 				title: omdbData["Title"],
-			});
-			await dbMedia.save();
-		}
+				poster: posterValue,
+			},
+			{
+				new: true,
+				upsert: true,
+				setDefaultsOnInsert: true,
+			}
+		);
 
 		// Return DB doc merged with OMDb display fields
 		return res.status(200).json({
@@ -109,8 +119,10 @@ router.get("/:imdbID", async (req: Request, res: ExpressResponse) => {
 				typeof omdbData["Genre"] === "string"
 					? (omdbData["Genre"] as string).split(", ")
 					: [],
-			poster: omdbData["Poster"],
-			description: omdbData["Plot"],
+			poster:
+				typeof omdbData["Poster"] === "string" && omdbData["Poster"] !== "N/A"
+					? omdbData["Poster"]
+					: "",
 		});
 	} catch (error) {
 		console.error("Media fetch error:", error);

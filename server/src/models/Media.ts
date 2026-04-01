@@ -12,6 +12,10 @@ const mediaSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
+		poster: {
+			type: String,
+			default: "",
+		},
 	},
 	{
 		timestamps: true,
