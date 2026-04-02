@@ -59,6 +59,16 @@ export interface WatchlistItem {
   poster?: string;
 }
 
+export interface FeedItem {
+  _id: string;
+  username: string;
+  imdbID: string;
+  title: string;
+  poster: string | null;
+  status: string;
+  dateAdded: string;
+}
+
 export interface ReviewAuthor {
   _id: string;
   username: string;
@@ -155,7 +165,7 @@ export const getWatchlist = (userId: string) => {
   return apiClient.get<WatchlistItem[]>(`watchlist/${userId}`);
 };
 
-export const addToWatchlist = (data: { imdbID: string; status?: string; userRating?: number }) => {
+export const addToWatchlist = (data: { imdbID: string; status?: string; userRating?: number; title?: string; poster?: string }) => {
   return apiClient.post<WatchlistItem>('watchlist', data);
 };
 
@@ -183,4 +193,32 @@ export const getReviewComments = (reviewId: string) => {
 
 export const addReviewComment = (data: AddReviewCommentPayload) => {
   return apiClient.post<{ message: string; data: ReviewComment }>('review-comments', data);
+};
+
+// ── Community Feed ────────────────────────────────
+export const getFeed = () => {
+  return apiClient.get<FeedItem[]>('feed');
+};
+
+// ── Friends / following ───────────────────────────
+export interface FriendUser {
+  _id: string;
+  username: string;
+  profileVisibility: string;
+}
+
+export const getFriends = () => {
+  return apiClient.get<FriendUser[]>('friends');
+};
+
+export const followUser = (friendId: string) => {
+  return apiClient.post(`friends/${friendId}`);
+};
+
+export const unfollowUser = (friendId: string) => {
+  return apiClient.delete(`friends/${friendId}`);
+};
+
+export const checkFollowing = (friendId: string) => {
+  return apiClient.get<{ following: boolean }>(`friends/check/${friendId}`);
 };
