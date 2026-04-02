@@ -1,22 +1,37 @@
+// hsp - Register.tsx  (route: /signup)
+// Matches the signup mockup:
+//  1. Compact centered "Sign Up" form at the top (Email, Username, Password)
+//  2. "Choose what you want to watch" section below with a 3x2 tile grid
+//  3. Centered "Next" link below the grid
+// Route kept at /signup (App.tsx will add this route alias)
+
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../api/mediaApi';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/auth.css';
 
+// Gradient tile placeholders matching mockup color swatches
+const GENRE_TILES = [
+  { label: 'Adventure', gradient: 'linear-gradient(135deg, #c8e6c9, #a5d6a7, #80cbc4)' },
+  { label: 'Drama', gradient: 'linear-gradient(135deg, #b2dfdb, #4db6ac, #26a69a)' },
+  { label: 'Sci-Fi', gradient: 'linear-gradient(135deg, #dce775, #aed9a2, #c5e1a5)' },
+  { label: 'Action', gradient: 'linear-gradient(135deg, #80deea, #c7a97b, #26c6da)' },
+  { label: 'Romance', gradient: 'linear-gradient(135deg, #b3e5fc, #4fc3f7, #b0bec5)' },
+  { label: 'Documentary', gradient: 'linear-gradient(135deg, #60b8f5, #a8d8ea, #e8c7c8)' },
+];
+
 const Register = () => {
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const context = useContext(AuthContext);
   const navigate = useNavigate();
 
-  if (!context) {
-    return <div>Loading...</div>;
-  }
+  if (!context) return <div>Loading...</div>;
 
   const { login } = context;
 
@@ -24,23 +39,18 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
-
     try {
       const response = await registerUser(username, email, password);
       const { user, token } = response.data;
       login(user, token);
-      navigate('/');
+      // Show tile selection step instead of immediately navigating away
+      setSubmitted(true);
     } catch (err: unknown) {
       const axiosError = err as any;
       setError(axiosError.response?.data?.message || 'Registration failed. Please try again.');
@@ -50,61 +60,99 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-form">
-        <h2>Register</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="form-group">
-            <label>Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <button type="submit" disabled={loading} className="submit-btn">
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-        <p>
-          Already have an account? <Link to="/login">Login here</Link>
+    <div className="auth-page signup-page">
+      {/* ── Sign Up form ─────────────────────────────── */}
+      <div className="auth-form-wrap">
+        <h1 className="auth-title">Sign Up</h1>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        {!submitted ? (
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label>Email</label>
+              <input
+                type="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="auth-field">
+              <label>Username</label>
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                disabled={loading}
+                autoComplete="username"
+              />
+            </div>
+
+            <div className="auth-field">
+              <label>Password</label>
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </div>
+
+            <button type="submit" disabled={loading} className="auth-submit-btn">
+              {loading ? 'Creating account...' : 'Submit'}
+            </button>
+          </form>
+        ) : (
+          <p className="auth-switch" style={{ textAlign: 'center', marginTop: 12 }}>
+            Account created! Scroll down to pick your genres.
+          </p>
+        )}
+
+        {!submitted && (
+          <p className="auth-switch">
+            Already have an account? <Link to="/login">Log In</Link>
+          </p>
+        )}
+      </div>
+
+      {/* ── "Choose what you want to watch" section ── */}
+      <div className="signup-genre-section">
+        <h2 className="signup-genre-title">Choose what you want to watch</h2>
+        <p className="signup-genre-sub">
+          This is what makes WatchIt! personalised to you.
         </p>
+
+        {/* 3-column × 2-row tile grid */}
+        <div className="signup-genre-grid">
+          {GENRE_TILES.map((tile) => (
+            <div
+              key={tile.label}
+              className="signup-genre-tile"
+              style={{ background: tile.gradient }}
+            />
+          ))}
+        </div>
+
+        {/* Centered "Next" navigation */}
+        <div className="signup-next-wrap">
+          <Link to="/" className="signup-next-link">
+            Next
+          </Link>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Register;
+

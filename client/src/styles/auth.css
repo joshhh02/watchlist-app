@@ -1,11 +1,177 @@
-.auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 60px);
-  padding: 20px;
-  background-color: #f5f5f5;
+/* hsp - auth.css
+   Styles for /login and /signup pages.
+   Matches mockups: compact centered form, light background, dark Submit button.
+   Signup additionally has a tile grid section below the form. */
+
+/* Full-page wrapper — white background, top-aligned */
+.auth-page {
+  background: #ffffff;
+  min-height: calc(100vh - 52px);
+  padding: 0 24px 60px;
 }
+
+/* ── Form area (centered, narrow) ─────────────────── */
+.auth-form-wrap {
+  max-width: 320px;
+  margin: 0 auto;
+  padding-top: 56px;
+  text-align: center;
+}
+
+/* Large heading */
+.auth-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  color: #1a1a1a;
+}
+
+/* The <form> itself */
+.auth-form {
+  text-align: left;
+}
+
+/* Each label + input pair */
+.auth-field {
+  margin-bottom: 14px;
+}
+
+.auth-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 5px;
+}
+
+.auth-field input {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  transition: border-color 0.15s;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: #888;
+  box-shadow: none;
+}
+
+.auth-field input::placeholder {
+  color: #bbb;
+}
+
+/* Dark "Submit" button matching mockup */
+.auth-submit-btn {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  margin-top: 8px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: none;
+}
+
+.auth-submit-btn:hover {
+  background-color: #333;
+  opacity: 1;
+}
+
+.auth-submit-btn:disabled {
+  background-color: #888;
+  cursor: not-allowed;
+}
+
+/* Error banner */
+.auth-error {
+  background-color: #fff0f0;
+  color: #c0392b;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  border: 1px solid #f5c6cb;
+  text-align: left;
+}
+
+/* "Already have an account?" switch link */
+.auth-switch {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: #666;
+}
+
+.auth-switch a {
+  color: #1a1a1a;
+  text-decoration: underline;
+}
+
+/* ── Signup-only: genre tile section ─────────────── */
+.signup-page .signup-genre-section {
+  max-width: 500px;
+  margin: 56px auto 0;
+  padding-top: 0;
+}
+
+.signup-genre-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.signup-genre-sub {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 24px;
+}
+
+/* 3-column × 2-row tile grid */
+.signup-genre-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.signup-genre-tile {
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.signup-genre-tile:hover {
+  opacity: 0.88;
+  transform: scale(1.02);
+}
+
+/* Centered "Next" link below tiles */
+.signup-next-wrap {
+  text-align: center;
+  margin-top: 28px;
+}
+
+.signup-next-link {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.signup-next-link:hover {
+  opacity: 0.7;
+}
+
 
 .auth-form {
   background: white;

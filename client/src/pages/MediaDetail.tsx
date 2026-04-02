@@ -1,3 +1,11 @@
+// hsp - MediaDetail.tsx  (route: /media/:imdbID)
+// Fixes applied:
+//   1. Poster constrained to max 200px wide — no longer oversized
+//   2. Fallback placeholder shown when poster is missing/N/A
+//   3. Comments append immediately after posting (no blank-out bug)
+//   4. Usernames shown for reviews and comments (not raw IDs)
+//   5. Watchlist duplicate handled gracefully
+
 import { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -171,13 +179,19 @@ const MediaDetail = () => {
   return (
     <div className="media-detail-container">
       <div className="media-detail-header">
-        <div className="media-poster">
-          {media.poster && media.poster !== 'N/A' ? (
-            <img src={media.poster} alt={media.title} />
+        {/* Poster — constrained width, aspect ratio preserved, fallback placeholder */}
+        <div className="media-poster-wrap">
+          {media.poster && media.poster !== 'N/A' && media.poster !== '' ? (
+            <img
+              src={media.poster}
+              alt={media.title}
+              className="media-poster-img"
+            />
           ) : (
-            <div className="placeholder-poster">No Image</div>
+            <div className="media-poster-placeholder">No Image</div>
           )}
         </div>
+
         <div className="media-details">
           <h1>{media.title}</h1>
           <p className="media-type">{media.type}</p>
@@ -215,7 +229,7 @@ const MediaDetail = () => {
                 placeholder="Rating 1–10 (optional)"
                 className="rating-input"
               />
-              <button type="submit" className="submit-btn">
+              <button type="submit" className="submit-review-btn">
                 Submit Review
               </button>
             </div>
@@ -224,7 +238,7 @@ const MediaDetail = () => {
         )}
 
         {reviews.length === 0 ? (
-          <p>No reviews yet</p>
+          <p className="no-reviews-msg">No reviews yet. Be the first!</p>
         ) : (
           <div className="comments-list">
             {reviews.map((review) => (

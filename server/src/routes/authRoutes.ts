@@ -45,29 +45,33 @@ router.post("/register", async (req: Request, res: Response) => {
 	}
 });
 
-// Login
+// hsp - Login
+// Accepts username + password (mockup shows username field, not email).
+// Never expose passwordHash in the response.
 router.post("/login", async (req: Request, res: Response) => {
 	try {
-		const { email, password } = req.body;
+		const { username, password } = req.body;
 
-		if (!email || !password) {
-			return res.status(400).json({ message: "Email and password are required" });
+		if (!username || !password) {
+			return res.status(400).json({ message: "Username and password are required" });
 		}
 
-		const user = await User.findOne({ email });
+		// Look up by username (case-insensitive match)
+		const user = await User.findOne({ username: { $regex: `^${username}$`, $options: "i" } });
 		if (!user) {
-			return res.status(401).json({ message: "Invalid email or password" });
+			return res.status(401).json({ message: "Invalid username or password" });
 		}
 
 		const isPasswordValid = await user.comparePassword(password);
 		if (!isPasswordValid) {
-			return res.status(401).json({ message: "Invalid email or password" });
+			return res.status(401).json({ message: "Invalid username or password" });
 		}
 
 		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", {
 			expiresIn: "7d",
 		});
 
+		// Return only safe fields — no passwordHash
 		res.status(200).json({
 			message: "Login successful",
 			user: { _id: user._id, username: user.username, email: user.email },

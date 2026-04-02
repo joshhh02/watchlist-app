@@ -1,3 +1,8 @@
+/* hsp - main.css
+   Global reset and base styles.
+   Light, minimal, spacious design matching the WatchIt mockups.
+   No heavy dark backgrounds — keep everything on white/near-white. */
+
 * {
   margin: 0;
   padding: 0;
@@ -11,9 +16,9 @@ body,
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f5f5;
-  color: #333;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #ffffff;
+  color: #1a1a1a;
 }
 
 a {
@@ -27,20 +32,21 @@ button {
   padding: 10px 20px;
   border-radius: 4px;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 button:hover {
-  opacity: 0.9;
+  opacity: 0.88;
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 input,
-textarea {
+textarea,
+select {
   font-family: inherit;
   padding: 10px;
   border: 1px solid #ddd;
@@ -49,26 +55,30 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  border-color: #aaa;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 
+/* Shared utility states */
 .loading {
   text-align: center;
-  padding: 40px 20px;
-  font-size: 18px;
-  color: #666;
+  padding: 60px 20px;
+  font-size: 16px;
+  color: #888;
 }
 
 .error-message {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: #fff0f0;
+  color: #c0392b;
   padding: 12px 20px;
   border-radius: 4px;
-  margin: 20px;
+  margin: 20px auto;
+  max-width: 480px;
   border: 1px solid #f5c6cb;
+  font-size: 14px;
 }
 
 .empty-state {
@@ -78,16 +88,60 @@ textarea:focus {
 
 .empty-state p {
   margin-bottom: 20px;
-  font-size: 16px;
-  color: #666;
+  font-size: 15px;
+  color: #888;
 }
 
 .action-btn {
-  background-color: #007bff;
+  background-color: #1a1a1a;
   color: white;
   padding: 10px 30px;
+  border-radius: 4px;
 }
 
 .action-btn:hover {
-  background-color: #0056b3;
+  background-color: #333;
 }
+
+/* Page wrapper used by Films, Shows, ShowGenre */
+.page-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 0;
+}
+
+/* Simple two-column grid used by Films and Shows genre cards */
+.genre-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+/* Footer shared across Films / Shows pages */
+.page-footer {
+  display: flex;
+  gap: 80px;
+  padding: 48px 0 40px;
+  margin-top: 60px;
+  border-top: 1px solid #eee;
+}
+
+.page-footer h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.page-footer p,
+.page-footer a {
+  font-size: 13px;
+  color: #666;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.page-footer a:hover {
+  text-decoration: underline;
+}
+

@@ -1,0 +1,227 @@
+/* hsp - profile.css
+   Styles for /profile (own profile) and /users/:userId (public profile view).
+   Matches the mockup: large heading, clean white card, lots of whitespace. */
+
+/* ── Profile page wrapper ───────────────────────── */
+.profile-page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 56px 24px 80px;
+}
+
+/* Large "My Profile" heading */
+.profile-heading {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+/* ── Info card ────────────────────────────────── */
+.profile-card {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 10px;
+  padding: 28px 24px;
+  margin-bottom: 28px;
+}
+
+/* Each info row (label + value) */
+.profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.profile-info-row:last-of-type {
+  border-bottom: none;
+}
+
+.profile-info-label {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.profile-info-value {
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+/* Visibility select row */
+.profile-visibility-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid #f5f5f5;
+  margin-top: 4px;
+}
+
+.profile-select {
+  padding: 7px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #333;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Save button */
+.profile-save-btn {
+  margin-top: 18px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  font-weight: 500;
+}
+
+.profile-save-btn:hover {
+  background: #333;
+  opacity: 1;
+}
+
+.profile-save-btn:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+/* Status messages */
+.profile-msg {
+  margin-top: 12px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.profile-msg-ok   { color: #27ae60; }
+.profile-msg-error { color: #c0392b; }
+
+/* Private profile message */
+.profile-private-msg {
+  font-size: 15px;
+  color: #888;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ── Sections (watchlist link, user search) ─────── */
+.profile-section {
+  margin-bottom: 32px;
+}
+
+.profile-section-heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 14px;
+}
+
+/* Watchlist link button */
+.profile-link-btn {
+  display: inline-block;
+  font-size: 14px;
+  color: #1a1a1a;
+  text-decoration: underline;
+}
+
+.profile-link-btn:hover {
+  opacity: 0.7;
+}
+
+/* User search input */
+.profile-user-search-input {
+  width: 100%;
+  padding: 9px 14px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+
+.profile-user-search-input:focus {
+  border-color: #aaa;
+  outline: none;
+}
+
+.profile-search-hint {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+/* User results list */
+.profile-user-results {
+  list-style: none;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.profile-user-result-item {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.profile-user-result-item:last-child {
+  border-bottom: none;
+}
+
+.profile-user-result-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #1a1a1a;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.profile-user-result-btn:hover {
+  background: #f9f9f9;
+  opacity: 1;
+}
+
+.profile-user-result-name {
+  font-weight: 500;
+}
+
+/* "Private" badge next to private users */
+.profile-user-private-badge {
+  font-size: 11px;
+  color: #aaa;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+/* Back button on public profile page */
+.profile-back-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 13px;
+  padding: 0;
+  margin-top: 20px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.profile-back-btn:hover {
+  color: #1a1a1a;
+  opacity: 1;
+}

@@ -60,7 +60,8 @@ router.get("/search", async (req: Request, res: ExpressResponse) => {
 // Upserts imdbID + title into MongoDB for reference. Does not store extra fields.
 router.get("/:imdbID", async (req: Request, res: ExpressResponse) => {
 	try {
-		const { imdbID } = req.params;
+		// Cast to string — req.params values are always strings in Express route handlers
+		const imdbID = req.params.imdbID as string;
 
 		const apiKey = getOmdbApiKey();
 		if (!apiKey) {

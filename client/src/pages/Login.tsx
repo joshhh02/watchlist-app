@@ -1,3 +1,8 @@
+// hsp - Login.tsx
+// Matches the /login mockup: compact centered form with Username + Password fields
+// and a dark "Submit" button. Mostly open/empty whitespace below.
+// Login now sends username (not email) to match the updated backend.
+
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../api/mediaApi';
@@ -5,16 +10,14 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/auth.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const context = useContext(AuthContext);
   const navigate = useNavigate();
 
-  if (!context) {
-    return <div>Loading...</div>;
-  }
+  if (!context) return <div>Loading...</div>;
 
   const { login } = context;
 
@@ -22,9 +25,9 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const response = await loginUser(email, password);
+      // Backend now accepts username instead of email
+      const response = await loginUser(username, password);
       const { user, token } = response.data;
       login(user, token);
       navigate('/');
@@ -37,37 +40,46 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-form">
-        <h2>Login</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email</label>
+    <div className="auth-page">
+      <div className="auth-form-wrap">
+        <h1 className="auth-title">Log In</h1>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-field">
+            <label>Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               disabled={loading}
+              autoComplete="username"
             />
           </div>
-          <div className="form-group">
+
+          <div className="auth-field">
             <label>Password</label>
             <input
               type="password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
+              autoComplete="current-password"
             />
           </div>
-          <button type="submit" disabled={loading} className="submit-btn">
-            {loading ? 'Logging in...' : 'Login'}
+
+          <button type="submit" disabled={loading} className="auth-submit-btn">
+            {loading ? 'Logging in...' : 'Submit'}
           </button>
         </form>
-        <p>
-          Don't have an account? <Link to="/register">Register here</Link>
+
+        <p className="auth-switch">
+          Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
       </div>
     </div>
@@ -75,4 +87,5 @@ const Login = () => {
 };
 
 export default Login;
+
 

@@ -1,10 +1,192 @@
+/* hsp - navbar.css
+   Clean, compact top navbar matching the WatchIt mockups.
+   Light background, small text links on the left, rounded search bar on the right.
+   Replaces previous dark #222 navbar. */
+
 .navbar {
-  background-color: #222;
-  padding: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  sticky: top;
+  background-color: #ffffff;
+  border-bottom: 1px solid #ebebeb;
+  position: sticky;
+  top: 0;
   z-index: 100;
 }
+
+.navbar-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  gap: 0;
+}
+
+/* Logo / brand mark — small image-like mark on the left */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  flex-shrink: 0;
+}
+
+.navbar-logo-mark {
+  font-size: 22px;
+  line-height: 1;
+  /* Colourful emoji-style mark matching mockup logo area */
+}
+
+/* Nav links — small, minimal, no heavy weight */
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.nav-link {
+  font-size: 13px;
+  color: #333;
+  font-weight: 400;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.nav-link:hover {
+  color: #000;
+}
+
+/* Logout is a plain text link, not a heavy button */
+.nav-link-logout {
+  font-size: 13px;
+  color: #333;
+  font-weight: 400;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.nav-link-logout:hover {
+  color: #000;
+  opacity: 1;
+}
+
+/* Search area — pushed to the right */
+.navbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.navbar-search-input {
+  width: 190px;
+  padding: 6px 14px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background-color: #fafafa;
+  color: #333;
+  transition: border-color 0.15s, width 0.2s;
+}
+
+.navbar-search-input:focus {
+  outline: none;
+  border-color: #bbb;
+  box-shadow: none;
+  width: 230px;
+}
+
+.navbar-search-input::placeholder {
+  color: #aaa;
+}
+
+/* Small search icon button */
+.navbar-search-btn {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  font-size: 15px;
+  color: #555;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-search-btn:hover {
+  color: #000;
+  opacity: 1;
+}
+
+/* Inline search results dropdown */
+.navbar-search-results {
+  position: absolute;
+  top: 48px;
+  right: 24px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  width: 280px;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.navbar-search-result-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #222;
+  transition: background 0.1s;
+}
+
+.navbar-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.navbar-search-result-item:hover {
+  background: #f7f7f7;
+}
+
+.navbar-search-result-img {
+  width: 30px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #eee;
+  flex-shrink: 0;
+}
+
+.navbar-search-hint {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #999;
+}
+
+/* Position context for the dropdown */
+.navbar-search-wrapper {
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .navbar-container {
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .navbar-search-input {
+    width: 130px;
+  }
+}
+
 
 .navbar-container {
   max-width: 1200px;
