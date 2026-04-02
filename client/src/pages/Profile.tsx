@@ -7,7 +7,7 @@
 //   - Public/private profile notice
 
 import { useState, useEffect, useContext, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import {
   getProfile, updateProfile, searchUsers,
@@ -166,12 +166,7 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Watchlist shortcut link */}
-      <div className="profile-section">
-        <Link to="/watchlist" className="profile-link-btn">
-          My Watchlist →
-        </Link>
-      </div>
+      {/* Watchlist shortcut link — skip, nav already has "My Watchlist" */}
 
       {/* ── Friends (following) section ──────────────── */}
       <div className="profile-section">

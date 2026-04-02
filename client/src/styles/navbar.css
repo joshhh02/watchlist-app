@@ -21,7 +21,7 @@
   gap: 0;
 }
 
-/* Logo / brand mark */
+/* Logo */
 .navbar-logo {
   display: flex;
   align-items: center;
@@ -30,10 +30,12 @@
   text-decoration: none;
 }
 
-.navbar-logo-img {
-  height: 36px;
-  width: auto;
-  display: block;
+.navbar-logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
 }
 
 /* Nav links — must be explicitly dark on white background */

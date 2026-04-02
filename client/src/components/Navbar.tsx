@@ -85,9 +85,8 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        {/* Logo — drop logo.png in client/public/ to replace */}
         <Link to="/" className="navbar-logo" aria-label="WatchIt home">
-          <img src="/logo.png" className="navbar-logo-img" alt="WatchIt" />
+          <span className="navbar-logo-text">WatchIt!</span>
         </Link>
 
         {/* Left-side nav links */}

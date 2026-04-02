@@ -150,9 +150,11 @@ export const getPublicUser = (userId: string) => {
 };
 
 // ── Media ─────────────────────────────────────────
-export const searchMedia = (title: string) => {
+export const searchMedia = (title: string, type?: 'movie' | 'series', page?: number) => {
+  const typeParam = type ? `&type=${type}` : '';
+  const pageParam = page && page > 1 ? `&page=${page}` : '';
   return apiClient.get<{ results: OmdbSearchResult[] }>(
-    `media/search?title=${encodeURIComponent(title)}`
+    `media/search?title=${encodeURIComponent(title)}${typeParam}${pageParam}`
   );
 };
 

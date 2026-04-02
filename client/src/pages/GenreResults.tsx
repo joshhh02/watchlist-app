@@ -1,7 +1,7 @@
 // GenreResults.tsx — /genre?type=movie&genre=Action
 // Loads OMDb search results for a genre keyword + type, with a Load More button.
 
-import { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia, addToWatchlist, OmdbSearchResult } from '../api/mediaApi';
 import { AuthContext } from '../context/AuthContext';
@@ -24,14 +24,22 @@ const GenreResults = () => {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
 
+  const seenIds = React.useRef<Set<string>>(new Set());
+
   const fetchPage = async (pageNum: number, append = false) => {
     if (pageNum === 1) setLoading(true); else setLoadingMore(true);
     try {
-      // OMDb search with genre as keyword + type filter
-      const res = await searchMedia(`${genre}`);
-      const items = res.data.results;
-      if (items.length === 0) setHasMore(false);
-      setResults((prev) => (append ? [...prev, ...items] : items));
+      const mediaType = type === 'series' ? 'series' : 'movie';
+      const res = await searchMedia(genre, mediaType, pageNum);
+      // Filter out games, then deduplicate by imdbID
+      const fresh = res.data.results.filter((item) => {
+        if (item.type === 'game') return false;
+        if (seenIds.current.has(item.imdbID)) return false;
+        seenIds.current.add(item.imdbID);
+        return true;
+      });
+      if (fresh.length === 0) setHasMore(false);
+      setResults((prev) => (append ? [...prev, ...fresh] : fresh));
     } catch {
       if (!append) setError('Failed to load results.');
       setHasMore(false);
@@ -43,6 +51,7 @@ const GenreResults = () => {
 
   useEffect(() => {
     if (genre) {
+      seenIds.current = new Set();
       setResults([]);
       setPage(1);
       setHasMore(true);
