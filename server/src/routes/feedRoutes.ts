@@ -1,5 +1,7 @@
 import { Router, Response } from "express";
 import Watchlist from "../models/Watchlist";
+import Friend from "../models/Friend";
+import { authenticate, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -23,6 +25,54 @@ async function enrichFromOmdb(imdbID: string, apiKey: string): Promise<{ title: 
     return { title: imdbID, poster: null };
   }
 }
+
+// GET /api/feed/friends
+// Returns the 20 most recent watchlist additions from users the current user follows.
+router.get("/friends", authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const friendLinks = await Friend.find({ userId }).select("friendId").lean();
+    const friendIds = friendLinks.map((link: any) => link.friendId);
+
+    if (friendIds.length === 0) {
+      return res.json([]);
+    }
+
+    const items = await Watchlist.find({ userId: { $in: friendIds } })
+      .populate({ path: "userId", select: "username" })
+      .sort({ dateAdded: -1 })
+      .limit(80);
+
+    const apiKey = getOmdbApiKey();
+
+    const feed = await Promise.all(
+      (items as any[]).slice(0, 20).map(async (item) => {
+        let title: string = item.title || "";
+        let poster: string | null = item.poster || null;
+
+        if (!title && apiKey) {
+          const enriched = await enrichFromOmdb(item.imdbID, apiKey);
+          title = enriched.title;
+          poster = poster || enriched.poster;
+        }
+
+        return {
+          _id: item._id,
+          username: item.userId?.username || "Unknown",
+          imdbID: item.imdbID,
+          title: title || item.imdbID,
+          poster,
+          status: item.status,
+          dateAdded: item.dateAdded,
+        };
+      })
+    );
+
+    return res.json(feed);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch friends feed", error });
+  }
+});
 
 // GET /api/feed
 // Returns the 20 most recent watchlist additions from users with public profiles.

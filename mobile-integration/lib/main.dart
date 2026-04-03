@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import 'auth_api.dart';
@@ -173,7 +171,8 @@ class _SignUpPage extends StatelessWidget {
                       onSuccess: () {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                            builder: (_) => const _CurationPage(),
+                            builder: (_) =>
+                                const _CurationPage(saveOnNext: true),
                           ),
                         );
                       },
@@ -293,7 +292,7 @@ class _LogInFormState extends State<_LogInForm> {
       }
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const _CurationPage()),
+        MaterialPageRoute(builder: (_) => const _MainFeedPage()),
       );
     } on AuthApiException catch (error) {
       if (!mounted) {
@@ -302,6 +301,14 @@ class _LogInFormState extends State<_LogInForm> {
 
       setState(() {
         _serverError = error.message;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = 'An unexpected error occurred. Please try again.';
       });
     } finally {
       if (mounted) {
@@ -472,6 +479,14 @@ class _SignUpFormState extends State<_SignUpForm> {
       setState(() {
         _serverError = error.message;
       });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = 'An unexpected error occurred. Please try again.';
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -567,8 +582,92 @@ class _SignUpFormState extends State<_SignUpForm> {
   }
 }
 
-class _CurationPage extends StatelessWidget {
-  const _CurationPage();
+class _CurationPage extends StatefulWidget {
+  const _CurationPage({required this.saveOnNext});
+
+  final bool saveOnNext;
+
+  @override
+  State<_CurationPage> createState() => _CurationPageState();
+}
+
+class _CurationPageState extends State<_CurationPage> {
+  static const List<String> _genres = <String>[
+    'Action',
+    'Adventure',
+    'Animation',
+    'Comedy',
+    'Crime',
+    'Documentary',
+    'Drama',
+    'Fantasy',
+    'Horror',
+    'Mystery',
+    'Romance',
+    'Sci-Fi',
+    'Thriller',
+  ];
+
+  final Set<String> _selectedGenres = <String>{};
+  bool _isSubmitting = false;
+  String? _serverError;
+
+  Future<void> _submitGenres() async {
+    if (_selectedGenres.isEmpty) {
+      setState(() {
+        _serverError = 'Pick at least one genre to continue.';
+      });
+      return;
+    }
+
+    if (!widget.saveOnNext) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const _MainFeedPage()),
+        (route) => false,
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _serverError = null;
+    });
+
+    try {
+      await AuthApi.saveGenrePreferences(_selectedGenres.toList());
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const _MainFeedPage()),
+        (route) => false,
+      );
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = 'Could not save preferences. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -591,10 +690,10 @@ class _CurationPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'This is what makes WatchIt! personalized to you',
+                  'Pick your favorite genres so WatchIt can personalize your feed.',
                   style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
-                const SizedBox(height: 26),
+                const SizedBox(height: 22),
                 _CurationTile(
                   gradient: const LinearGradient(
                     colors: [
@@ -605,103 +704,63 @@ class _CurationPage extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  overlay: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: RadialGradient(
-                        center: const Alignment(-0.5, -0.4),
-                        radius: 0.9,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.32),
-                          Colors.transparent,
-                        ],
-                      ),
+                  overlay: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _genres.map((String genre) {
+                        final bool isSelected = _selectedGenres.contains(genre);
+                        return FilterChip(
+                          selected: isSelected,
+                          label: Text(genre),
+                          selectedColor: const Color(0xFF2F86E2),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          onSelected: (bool selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedGenres.add(genre);
+                              } else {
+                                _selectedGenres.remove(genre);
+                              }
+                              _serverError = null;
+                            });
+                          },
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
-                _CurationTile(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFC5DDD7),
-                      Color(0xFFB6D9D4),
-                      Color(0xFF2CBFE9),
-                      Color(0xFFC9934B),
-                      Color(0xFF857659),
-                    ],
-                    stops: [0.0, 0.35, 0.55, 0.78, 1.0],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+                const SizedBox(height: 22),
+                Text(
+                  '${_selectedGenres.length} selected',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF374151),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 18),
-                _CurationTile(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF9DBEC0), Color(0xFF94B8B8)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  overlay: CustomPaint(painter: _LeafStrokePainter()),
-                ),
-                const SizedBox(height: 18),
-                _CurationTile(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF9ED7D7),
-                      Color(0xFFBBD3F2),
-                      Color(0xFF8FCED2),
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  overlay: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: const RadialGradient(
-                        center: Alignment.center,
-                        radius: 0.55,
-                        colors: [Color(0xFF4A99BE), Color(0x004A99BE)],
-                      ),
+                if (_serverError != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    _serverError!,
+                    style: const TextStyle(
+                      color: Color(0xFFB91C1C),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                _CurationTile(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF9CCDC7),
-                      Color(0xFFA9D3F5),
-                      Color(0xFFB7BA6A),
-                      Color(0xFFA8A48F),
-                      Color(0xFFA9D4CE),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _CurationTile(
-                  gradient: const RadialGradient(
-                    center: Alignment(0, -0.2),
-                    radius: 1.0,
-                    colors: [
-                      Color(0xFF9BC8C2),
-                      Color(0xFF84B8B5),
-                      Color(0xFF40A6DA),
-                      Color(0xFF77C9CF),
-                    ],
-                  ),
-                  overlay: CustomPaint(painter: _SunburstPainter()),
-                ),
-                const SizedBox(height: 34),
+                ],
+                const SizedBox(height: 28),
                 Center(
                   child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    },
-                    child: const Text(
-                      'Next',
-                      style: TextStyle(
+                    onPressed: _isSubmitting ? null : _submitGenres,
+                    child: Text(
+                      _isSubmitting ? 'Saving...' : 'Next',
+                      style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w400,
                         decoration: TextDecoration.underline,
@@ -744,96 +803,323 @@ class _CurationTile extends StatelessWidget {
   }
 }
 
-class _LeafStrokePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = const Color(0xFF4B94B8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
-    final Path left = Path()
-      ..moveTo(-12, size.height * 0.82)
-      ..quadraticBezierTo(
-        size.width * 0.16,
-        size.height * 0.92,
-        size.width * 0.38,
-        size.height * 0.98,
-      );
-
-    final Path middle = Path()
-      ..moveTo(size.width * 0.36, size.height * 0.65)
-      ..quadraticBezierTo(
-        size.width * 0.52,
-        size.height * 0.85,
-        size.width * 0.68,
-        size.height * 0.98,
-      );
-
-    final Path right = Path()
-      ..moveTo(size.width * 0.78, size.height * 0.26)
-      ..quadraticBezierTo(
-        size.width * 0.86,
-        size.height * 0.58,
-        size.width * 0.73,
-        size.height * 0.98,
-      );
-
-    final Path farRight = Path()
-      ..moveTo(size.width * 1.02, size.height * 0.34)
-      ..quadraticBezierTo(
-        size.width * 0.9,
-        size.height * 0.58,
-        size.width * 0.82,
-        size.height * 0.98,
-      );
-
-    canvas.drawPath(left, paint);
-    canvas.drawPath(middle, paint);
-    canvas.drawPath(right, paint);
-    canvas.drawPath(farRight, paint);
-  }
+class _MainFeedPage extends StatefulWidget {
+  const _MainFeedPage();
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  State<_MainFeedPage> createState() => _MainFeedPageState();
 }
 
-class _SunburstPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint rayPaint = Paint()
-      ..color = const Color(0xFF2F86E2).withValues(alpha: 0.8)
-      ..style = PaintingStyle.fill;
+class _MainFeedPageState extends State<_MainFeedPage> {
+  bool _isLoading = true;
+  String? _error;
+  List<FriendFeedItem> _feedItems = <FriendFeedItem>[];
+  List<RecommendedMovie> _recommendedMovies = <RecommendedMovie>[];
 
-    final Offset center = Offset(size.width / 2, size.height * 0.34);
-    const int rays = 14;
-    for (int i = 0; i < rays; i++) {
-      final double angle = (i / rays) * 3.14159265359 * 2;
-      final Path ray = Path()
-        ..moveTo(center.dx, center.dy)
-        ..lineTo(
-          center.dx + 220 * math.cos(angle - 0.1),
-          center.dy + 220 * math.sin(angle - 0.1),
-        )
-        ..lineTo(
-          center.dx + 220 * math.cos(angle + 0.1),
-          center.dy + 220 * math.sin(angle + 0.1),
-        )
-        ..close();
-      canvas.drawPath(ray, rayPaint);
-    }
-
-    final Paint fade = Paint()
-      ..shader = const RadialGradient(
-        radius: 0.9,
-        colors: [Color(0x0098C8C4), Color(0xCC98C8C4)],
-      ).createShader(Rect.fromCircle(center: center, radius: 240));
-    canvas.drawRect(Offset.zero & size, fade);
+  void _logout() {
+    AuthSession.clear();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const _HomePage(logoAssetPath: MainApp._logoAssetPath),
+      ),
+      (route) => false,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  void initState() {
+    super.initState();
+    _loadFeed();
+  }
+
+  Future<void> _loadFeed() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final List<FriendFeedItem> items = await AuthApi.fetchFriendsFeed();
+      List<RecommendedMovie> recommendations = <RecommendedMovie>[];
+
+      if (items.isEmpty) {
+        final dynamic rawGenres = AuthSession.currentUser?['preferredGenres'];
+        final List<String> genres = rawGenres is List
+            ? rawGenres.map((dynamic value) => value.toString()).toList()
+            : <String>[];
+
+        recommendations = await AuthApi.fetchRecommendedMoviesByGenres(genres);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _feedItems = items;
+        _recommendedMovies = recommendations;
+      });
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _error = 'Could not load feed right now.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String username =
+        AuthSession.currentUser?['username']?.toString() ?? 'User';
+
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Home',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  username,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                PopupMenuButton<String>(
+                  tooltip: 'User menu',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 120),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD1D5DB)),
+                    ),
+                    child: const Icon(
+                      Icons.menu,
+                      size: 18,
+                      color: Colors.black,
+                    ),
+                  ),
+                  onSelected: (String value) {
+                    if (value == 'logout') {
+                      _logout();
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      const <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'logout',
+                          child: Text('Log Out'),
+                        ),
+                      ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadFeed,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? ListView(
+                children: [
+                  const SizedBox(height: 120),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFB91C1C),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : _feedItems.isEmpty
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+                children: [
+                  const Center(
+                    child: Text(
+                      'Nothing to see here yet...',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 56),
+                  const Text(
+                    'Recommended for you',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_recommendedMovies.isEmpty)
+                    const Text(
+                      'Select genres to start getting movie picks.',
+                      style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
+                    )
+                  else
+                    ..._recommendedMovies
+                        .map(
+                          (RecommendedMovie movie) =>
+                              _RecommendationCard(movie: movie),
+                        )
+                        .toList(),
+                ],
+              )
+            : ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                itemBuilder: (BuildContext context, int index) {
+                  final FriendFeedItem item = _feedItems[index];
+                  return _FeedStatusCard(item: item);
+                },
+                separatorBuilder: (_, index) => const SizedBox(height: 12),
+                itemCount: _feedItems.length,
+              ),
+      ),
+    );
+  }
+}
+
+class _RecommendationCard extends StatelessWidget {
+  const _RecommendationCard({required this.movie});
+
+  final RecommendedMovie movie;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: movie.poster != null && movie.poster!.isNotEmpty
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  movie.poster!,
+                  width: 44,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.movie),
+                ),
+              )
+            : const Icon(Icons.movie),
+        title: Text(
+          movie.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111827),
+          ),
+        ),
+        subtitle: Text(
+          movie.year.isEmpty ? 'Movie' : movie.year,
+          style: const TextStyle(color: Color(0xFF6B7280)),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedStatusCard extends StatelessWidget {
+  const _FeedStatusCard({required this.item});
+
+  final FriendFeedItem item;
+
+  String _formatStatus(String rawStatus) {
+    switch (rawStatus) {
+      case 'plan_to_watch':
+        return 'plans to watch';
+      case 'watching':
+        return 'is watching';
+      case 'completed':
+        return 'finished';
+      default:
+        return rawStatus;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String sentence =
+        '${item.username} ${_formatStatus(item.status)} ${item.title}';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              sentence,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              item.dateAdded.toLocal().toString(),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _FieldLabel extends StatelessWidget {

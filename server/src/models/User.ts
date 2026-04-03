@@ -6,6 +6,7 @@ export interface IUser extends mongoose.Document {
 	email: string;
 	passwordHash: string;
 	profileVisibility: string;
+	preferredGenres: string[];
 	createdAt: Date;
 	isVerified: boolean;
 	verificationToken: string;
@@ -35,6 +36,10 @@ const userSchema = new mongoose.Schema(
 		profileVisibility: {
 			type: String,
 			default: "public",
+		},
+		preferredGenres: {
+			type: [String],
+			default: [],
 		},
 		isVerified: {
 			type: Boolean,

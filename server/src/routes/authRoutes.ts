@@ -40,7 +40,12 @@ router.post("/register", async (req: Request, res: Response) => {
 
 		res.status(201).json({
 			message: "User registered successfully",
-			user: { _id: newUser._id, username: newUser.username, email: newUser.email },
+			user: {
+				_id: newUser._id,
+				username: newUser.username,
+				email: newUser.email,
+				preferredGenres: newUser.preferredGenres,
+			},
 			token,
 		});
 	} catch (error) {
@@ -82,7 +87,12 @@ router.post("/login", async (req: Request, res: Response) => {
 		// Return only safe fields — no passwordHash
 		res.status(200).json({
 			message: "Login successful",
-			user: { _id: user._id, username: user.username, email: user.email },
+			user: {
+				_id: user._id,
+				username: user.username,
+				email: user.email,
+				preferredGenres: user.preferredGenres ?? [],
+			},
 			token,
 		});
 	} catch (error) {
@@ -126,6 +136,42 @@ router.patch("/profile", authenticate, async (req: AuthRequest, res: Response) =
 	}
 });
 
+router.patch("/profile/preferences", authenticate, async (req: AuthRequest, res: Response) => {
+	try {
+		const genres = Array.isArray(req.body?.genres) ? req.body.genres : null;
+		if (!genres) {
+			return res.status(400).json({ message: "genres must be an array of strings" });
+		}
+
+		const sanitizedGenres = Array.from(
+			new Set(
+				genres
+					.filter((genre: unknown) => typeof genre === "string")
+					.map((genre: string) => genre.trim())
+					.filter((genre: string) => genre.length > 0)
+			),
+		).slice(0, 20);
+
+		const user = await User.findByIdAndUpdate(
+			req.user?.id,
+			{ preferredGenres: sanitizedGenres },
+			{ new: true },
+		).select("_id username email preferredGenres");
+
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		return res.status(200).json({
+			message: "Genre preferences updated",
+			user,
+		});
+	} catch (error) {
+		console.error("Update preferences error:", error);
+		return res.status(500).json({ message: "Failed to update genre preferences" });
+	}
+});
+
 // Email verification endpoint
 router.get("/verify-email", async (req: Request, res: Response) => {
 	try {
@@ -160,7 +206,7 @@ router.get("/verify-email", async (req: Request, res: Response) => {
 });
 
 // Resend verification email endpoint
-router.post("/auth/resend-verification", async (req: Request, res: Response) => {
+router.post("/resend-verification", async (req: Request, res: Response) => {
 	try {
 		const { email } = req.body;
 		if (!email) {
