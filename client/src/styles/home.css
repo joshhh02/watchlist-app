@@ -1,5 +1,10 @@
 /* hsp - home.css */
 
+/* Global font */
+* {
+  font-family: Helvetica;
+}
+
 .home-container {
   max-width: 680px;
   margin: 0 auto;
@@ -8,13 +13,11 @@
 
 /* ── Hero section ───────────────────────────────── */
 .home-hero {
-  font-family: Helvetica;
   text-align: center;
   padding:10px 0 48px;
 }
 
 .home-hero h1 {
-  font-family: Helvetica;
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 12px;
@@ -22,7 +25,6 @@
 }
 
 .home-hero p {
-  font-family: Helvetica;
   font-size: 15px;
   color: #888;
   margin-bottom: 28px;

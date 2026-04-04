@@ -3,6 +3,11 @@
    Light background, small text links on the left, rounded search bar on the right.
    Replaces previous dark #222 navbar. */
 
+/* Global font */
+* {
+  font-family: Helvetica;
+}
+
 .navbar {
   background-color: #ffffff;
   border-bottom: 1px solid #ebebeb;
@@ -38,7 +43,6 @@
 }
 
 .navbar-logo-text {
-  font-family: Helvetica;
   font-style: normal;
   font-size: 16px;
   font-weight: 700;
@@ -58,7 +62,6 @@
 .nav-link,
 .nav-link:visited,
 .nav-link:link {
-  font-family: Helvetica;
   font-style: normal;
   font-size: 13px;
   color: #222 !important;
@@ -82,7 +85,6 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  font-family: Helvetica;
   text-decoration: none;
   transition: color 0.15s;
 }
