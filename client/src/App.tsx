@@ -24,7 +24,7 @@ import Shows from './pages/Shows';
 import ShowGenre from './pages/ShowGenre';
 import GenreResults from './pages/GenreResults';
 import UserPublicProfile from './pages/UserPublicProfile';
-import '../styles/main.css';
+import './styles/main.css';
 
 function App() {
   return (
