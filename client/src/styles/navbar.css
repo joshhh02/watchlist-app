@@ -27,6 +27,7 @@
   height: 50px;
   object-fit: contain;
   aspect-ratio: 1/1;
+  padding-right: 20px;
 }
 
 /* Ensure the logo image fits nicely within the navbar */
@@ -37,7 +38,7 @@
 }
 
 .navbar-logo-text {
-  font-family: Inter;
+  font-family: Helvetica;
   font-style: normal;
   font-size: 16px;
   font-weight: 700;
@@ -48,16 +49,17 @@
 
 /* Nav links — must be explicitly dark on white background */
 .navbar-links {
-  font-family: Inter;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   flex: 1;
 }
 
 .nav-link,
 .nav-link:visited,
 .nav-link:link {
+  font-family: Helvetica;
+  font-style: normal;
   font-size: 13px;
   color: #222 !important;
   font-weight: 500;
@@ -80,7 +82,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  font-family: Inter;
+  font-family: Helvetica;
   text-decoration: none;
   transition: color 0.15s;
 }
@@ -203,7 +205,7 @@
   }
 }
 
-
+/*
 .navbar-container {
   max-width: 1200px;
   margin: 0 auto;

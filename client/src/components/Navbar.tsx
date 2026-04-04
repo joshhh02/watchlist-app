@@ -5,8 +5,6 @@
 // The search bar is a mini inline search (debounced, min 3 chars) that
 // navigates to /search?q=... on submit or result click.
 
-declare module "*.png";
-
 import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
