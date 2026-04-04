@@ -31,6 +31,8 @@
 }
 
 .navbar-logo-text {
+  font-family: Inter;
+  font-style: normal;
   font-size: 16px;
   font-weight: 700;
   color: #1a1a1a;
@@ -40,6 +42,7 @@
 
 /* Nav links — must be explicitly dark on white background */
 .navbar-links {
+  font-family: Inter;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -71,7 +74,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  font-family: inherit;
+  font-family: Inter;
   text-decoration: none;
   transition: color 0.15s;
 }
