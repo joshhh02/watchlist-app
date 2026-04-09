@@ -230,6 +230,8 @@
 }
 
 .genre-grid {
+  margin-left: 25px;
+  margin-right: 25px;
   display: grid;
   grid-template-columns: repeat(4, 1fr); /* 4 columns */
   grid-template-rows: repeat(4, 1fr);    /* optional: 4 rows */
