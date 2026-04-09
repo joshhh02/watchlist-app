@@ -26,7 +26,7 @@ const ShowGenre = () => {
       <h1 className="page-heading">Show Genres</h1>
       <p className="page-sub">Browse shows by genre</p>
 
-      {/* 2-column genre grid — same component style as Films/Shows */}
+      {/* 4-column genre grid — same component style as Films/Shows */}
       <div className="genre-grid">
         {GENRES.map((genre) => (
           // Each genre tile links to /shows?genre=... for future filtering

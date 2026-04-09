@@ -175,6 +175,7 @@ const Register = () => {
               {loading ? 'Creating account...' : 'Submit'}
             </button>
           </form>
+
         ) : (
           <div className="auth-success">
             <p>Verification email sent! Please check your email and click the link to verify your account.</p>
@@ -204,7 +205,7 @@ const Register = () => {
 
       {/* ── "Choose what you want to watch" section ── */}
       {!submitted && isVisible && (
-        <section>
+        <section className="genre-selection">
       <div className="signup-genre-section">
         <h2 className="signup-genre-title">Choose what you want to watch</h2>
         <p className="signup-genre-sub">This is what makes WatchIt! personalised to you.</p>
@@ -224,7 +225,7 @@ const Register = () => {
       </section>
     )}
 
-    </div>
+  </div>
   );
 };
 
