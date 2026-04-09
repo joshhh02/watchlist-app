@@ -17,10 +17,10 @@ const GENRES = [
   { label: 'Documentary', gradient: 'radial-gradient(circle at 60% 50%, #26d0ce 20%, #c8f7c5 70%, #d0f0e0 100%)' },
   { label: 'Thriller',    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
   { label: 'Horror',      gradient: 'linear-gradient(135deg, #434343 0%, #000000 100%)' },
-  { label: 'Animation',      gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
-  { label: 'Crime',      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
-  { label: 'Fantasy',       gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
-  { label: 'Superhero',      gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
+  { label: 'Animation',   gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
+  { label: 'Crime',       gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+  { label: 'Fantasy',     gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
+  { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
 ];
 
 const ShowGenre = () => {

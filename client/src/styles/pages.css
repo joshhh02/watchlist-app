@@ -42,7 +42,7 @@
 }
 
 .genre-card:hover .genre-card-art {
-  opacity: 0.9;
+  opacity: 0.7;
 }
 
 /* Genre label text below the tile */

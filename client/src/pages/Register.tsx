@@ -7,12 +7,18 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/auth.css';
 
 const GENRE_TILES = [
-  { label: 'Adventure', gradient: 'linear-gradient(135deg, #c8e6c9, #a5d6a7, #80cbc4)' },
-  { label: 'Drama', gradient: 'linear-gradient(135deg, #b2dfdb, #4db6ac, #26a69a)' },
-  { label: 'Sci-Fi', gradient: 'linear-gradient(135deg, #dce775, #aed9a2, #c5e1a5)' },
-  { label: 'Action', gradient: 'linear-gradient(135deg, #80deea, #c7a97b, #26c6da)' },
-  { label: 'Romance', gradient: 'linear-gradient(135deg, #b3e5fc, #4fc3f7, #b0bec5)' },
-  { label: 'Documentary', gradient: 'linear-gradient(135deg, #60b8f5, #a8d8ea, #e8c7c8)' },
+  { label: 'Action',      gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
+  { label: 'Comedy',      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+  { label: 'Drama',       gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
+  { label: 'Sci-Fi',      gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
+  { label: 'Romance',     gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #f8d97d 100%)' },
+  { label: 'Documentary', gradient: 'radial-gradient(circle at 60% 50%, #26d0ce 20%, #c8f7c5 70%, #d0f0e0 100%)' },
+  { label: 'Thriller',    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { label: 'Horror',      gradient: 'linear-gradient(135deg, #434343 0%, #000000 100%)' },
+  { label: 'Animation',   gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
+  { label: 'Crime',       gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+  { label: 'Fantasy',     gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
+  { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
 ];
 
 // Password strength checks
