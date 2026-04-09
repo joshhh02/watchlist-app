@@ -40,7 +40,7 @@ const Films = () => {
       {/* Page heading */}
       <h1 className="page-heading">Films</h1>
 
-      {/* 2-column genre card grid */}
+      {/* 4-column genre card grid */}
       <div className="genre-grid">
         {FILM_GENRES.map((genre) => (
           <div
@@ -63,7 +63,7 @@ const Films = () => {
       <footer className="page-footer">
         <div>
           <h4>About WatchIt!</h4>
-          <p>This was made for the CDP4331 (POGSD) large project.</p>
+          <p>This was made for the CDP4331 (POOSD) large project.</p>
         </div>
         <div>
           <h4>Reach out</h4>
