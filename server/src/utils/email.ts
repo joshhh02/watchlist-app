@@ -14,6 +14,7 @@ const getSmtpConfig = () => {
 	const user = process.env.SMTP_USER;
 	const pass = process.env.SMTP_PASS;
 	const from = process.env.EMAIL_FROM;
+	const secureValue = process.env.SMTP_SECURE;
 
 	if (!host || !portValue || !user || !pass || !from) {
 		return null;
@@ -24,7 +25,9 @@ const getSmtpConfig = () => {
 		return null;
 	}
 
-	return { host, port, user, pass, from };
+	const secure = typeof secureValue === "string" ? secureValue.toLowerCase() === "true" : port === 465;
+
+	return { host, port, user, pass, from, secure };
 };
 
 const sendEmail = async (params: {
@@ -42,25 +45,31 @@ const sendEmail = async (params: {
 		return { delivered: false };
 	}
 
-	const transporter = nodemailer.createTransport({
-		host: smtpConfig.host,
-		port: smtpConfig.port,
-		secure: smtpConfig.port === 465,
-		auth: {
-			user: smtpConfig.user,
-			pass: smtpConfig.pass,
-		},
-	});
+	try {
+		const transporter = nodemailer.createTransport({
+			host: smtpConfig.host,
+			port: smtpConfig.port,
+			secure: smtpConfig.secure,
+			auth: {
+				user: smtpConfig.user,
+				pass: smtpConfig.pass,
+			},
+		});
 
-	await transporter.sendMail({
-		from: smtpConfig.from,
-		to: params.to,
-		subject: params.subject,
-		text: params.text,
-		html: params.html,
-	});
+		await transporter.sendMail({
+			from: smtpConfig.from,
+			to: params.to,
+			subject: params.subject,
+			text: params.text,
+			html: params.html,
+		});
 
-	return { delivered: true };
+		console.log(`[${params.logTag}] Email sent to ${params.to}`);
+		return { delivered: true };
+	} catch (error) {
+		console.error(`[${params.logTag}] Failed to send email to ${params.to}:`, error);
+		return { delivered: false };
+	}
 };
 
 export const sendPasswordResetEmail = async (
