@@ -30,7 +30,8 @@ app.use(
 app.use(
 	cors({
 		origin: (origin, callback) => {
-			if (!origin && !isProduction) {
+			// Native mobile apps and server-to-server calls often omit Origin.
+			if (!origin) {
 				callback(null, true);
 				return;
 			}
