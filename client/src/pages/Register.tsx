@@ -249,7 +249,13 @@ const selected = Array.from(selectedGenres);
           ))}
         </div>
         <div className="signup-next-wrap">
-          <Link to="/" className="signup-next-link">Next</Link>
+          <button
+            type="button"
+            className="signup-next-link"
+            onClick={() => navigate('/', { state: { genres: Array.from(selectedGenres) } })}
+          >
+            Next
+          </button>
         </div>
       </div>
       </section>
