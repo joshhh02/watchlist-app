@@ -55,12 +55,6 @@ const ShowGenre = () => {
           <h4>About WatchIt!</h4>
           <p>This was made for the COP4331 (POOSD) large project.</p>
         </div>
-        <div>
-          <h4>Reach out</h4>
-          <a href="#">Email</a>
-          <a href="#">Instagram</a>
-          <a href="#">LinkedIn</a>
-        </div>
       </footer>
     </div>
   );

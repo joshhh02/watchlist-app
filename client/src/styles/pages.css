@@ -135,3 +135,7 @@
 
 /* ── Footer ─────────────────────────────────────── */
 /* .page-footer defined in main.css */
+.page-footer {
+  background: #f5f5f5;
+  padding: 20px 25px;
+}
