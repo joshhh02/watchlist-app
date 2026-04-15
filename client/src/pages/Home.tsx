@@ -41,7 +41,7 @@ const Home = () => {
             <img src={seats} className="home-hero-image" />
           </div>
           <div>
-            <h1>Sign Up</h1>
+            <h1>Create an Account</h1>
             <p>Join our community to see what others are watching.</p>
             <button className="action-btn" onClick={() => navigate('/signup')}>
               Sign Up
