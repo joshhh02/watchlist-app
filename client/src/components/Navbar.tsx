@@ -127,10 +127,6 @@ const Navbar = () => {
             </button>
           </form>
 
-          {isAuthenticated && (
-            <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
-          )}
-
           {/* Inline dropdown results */}
           {query.length > 0 && (
             <div className="navbar-search-results">
@@ -169,6 +165,9 @@ const Navbar = () => {
             </div>
           )}
         </div>
+        {isAuthenticated && (
+          <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+        )}
       </div>
     </nav>
   );
