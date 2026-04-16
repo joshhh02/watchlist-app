@@ -1,15 +1,10 @@
-// hsp - Films.tsx  (route: /films)
-// Matches the /films mockup:
-//   - Large "Films" heading
-//   - 4-column grid of genre cards (colourful gradient tiles + label underneath)
-//   - Footer with "About WatchIt!" and "Reach out" columns
-// Uses gradient art tiles matching the mockup colour swatches.
-// Real OMDb data is available through Search; this page is a genre browse landing.
-
+import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { searchMedia, addToWatchlist, OmdbSearchResult } from '../api/mediaApi';
+import { AuthContext } from '../context/AuthContext';
+import MediaCard from '../components/MediaCard';
 import '../styles/pages.css';
 
-// Genre cards with representative gradient art (matching mockup swatches)
 const FILM_GENRES = [
   { label: 'Action',      gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
   { label: 'Comedy',      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
@@ -25,43 +20,105 @@ const FILM_GENRES = [
   { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
 ];
 
-const Films = () => {
+// One row for a single genre
+const GenreRow = ({
+  genre,
+  onAddToWatchlist,
+}: {
+  genre: string;
+  onAddToWatchlist?: (id: string) => Promise<string>;
+}) => {
   const navigate = useNavigate();
-  return (
-    <div className="page-wrapper">
-      {/* Page heading */}
-      <h1 className="page-heading">Films</h1>
+  const [results, setResults] = useState<OmdbSearchResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const seenIds = useRef<Set<string>>(new Set());
 
-      {/* 4-column genre card grid */}
-      <div className="genre-grid">
-        {FILM_GENRES.map((genre) => (
-          <div
-            key={genre.label}
-            className="genre-card"
-            onClick={() => navigate(`/genre?type=movie&genre=${encodeURIComponent(genre.label)}`)}
-          >
-            {/* Art tile */}
-            <div
-              className="genre-card-art"
-              style={{ background: genre.gradient }}
-            />
-            {/* Label underneath */}
-            <p className="genre-card-label">{genre.label}</p>
-          </div>
-        ))}
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await searchMedia(genre, 'movie', 1);
+        const fresh = res.data.results.filter((item: OmdbSearchResult) => {
+          if (item.type === 'game') return false;
+          if (seenIds.current.has(item.imdbID)) return false;
+          seenIds.current.add(item.imdbID);
+          return true;
+        });
+        setResults(fresh);
+      } catch {
+        setError('Failed to load.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [genre]);
+
+  return (
+    <section className="genre-row">
+      {/* Row header */}
+      <div className="genre-row-header">
+        <h2 className="genre-row-title">{genre}</h2>
+        <button
+          className="genre-back-btn"
+          onClick={() => navigate(`/genre?type=movie&genre=${encodeURIComponent(genre)}`)}
+        >
+          More →
+        </button>
       </div>
 
-      {/* Footer matching mockup */}
+      {/* Scrollable card strip */}
+      {loading && <p className="genre-loading">Loading...</p>}
+      {error && <p className="genre-error">{error}</p>}
+      {!loading && results.length > 0 && (
+        <div className="genre-row-scroll">
+          {results.map((m) => (
+            <div className="genre-row-item" key={m.imdbID}>
+              <MediaCard
+                media={m}
+                onViewDetails={(id) => navigate(`/media/${id}`)}
+                onAddToWatchlist={onAddToWatchlist}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const Films = () => {
+  const navigate = useNavigate();
+  const context = useContext(AuthContext);
+  const user = context?.user;
+
+  const handleAddToWatchlist = async (imdbID: string): Promise<string> => {
+    try {
+      await addToWatchlist({ imdbID, status: 'plan_to_watch' });
+      return 'Added to watchlist!';
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to add';
+      return msg === 'Item already in watchlist' ? 'Already in watchlist' : msg;
+    }
+  };
+
+  return (
+    <div className="page-wrapper">
+      <h1 className="page-heading">Movies</h1>
+
+      {FILM_GENRES.map((genre) => (
+        <GenreRow
+          key={genre.label}
+          genre={genre.label}
+          onAddToWatchlist={user ? handleAddToWatchlist : undefined}
+        />
+      ))}
+
       <footer className="page-footer">
         <div>
           <h4>About WatchIt!</h4>
-          <p>This was made for the CDP4331 (POOSD) large project.</p>
-        </div>
-        <div>
-          <h4>Reach out</h4>
-          <a href="#">Email</a>
-          <a href="#">Instagram</a>
-          <a href="#">LinkedIn</a>
+          <p>This was made for the COP4331 (POOSD) large project in Spring 2026.</p>
         </div>
       </footer>
     </div>

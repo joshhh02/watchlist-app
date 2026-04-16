@@ -96,7 +96,7 @@ const Navbar = () => {
             <>
               <Link to="/profile" className="nav-link">My Profile</Link>
               <Link to="/watchlist" className="nav-link">My Watchlist</Link>
-              <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+              
             </>
           ) : (
             <>
@@ -105,7 +105,7 @@ const Navbar = () => {
             </>
           )}
           <Link to="/shows" className="nav-link">Shows</Link>
-          <Link to="/films" className="nav-link">Films</Link>
+          <Link to="/films" className="nav-link">Movies</Link>
         </div>
 
         {/* Right-side rounded search bar */}
@@ -114,7 +114,7 @@ const Navbar = () => {
             <input
               className="navbar-search-input"
               type="text"
-              placeholder="Search Films and Shows"
+              placeholder="Search Movies and Shows"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search"
@@ -126,6 +126,10 @@ const Navbar = () => {
               </svg>
             </button>
           </form>
+
+          {isAuthenticated && (
+            <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+          )}
 
           {/* Inline dropdown results */}
           {query.length > 0 && (
