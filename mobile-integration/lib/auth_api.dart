@@ -133,6 +133,7 @@ class AuthApi {
 
   static final Uri _registerUri = Uri.parse('$baseUrl/auth/register');
   static final Uri _loginUri = Uri.parse('$baseUrl/auth/login');
+  static final Uri _profileUri = Uri.parse('$baseUrl/auth/profile');
   static final Uri _genrePreferencesUri = Uri.parse(
     '$baseUrl/auth/profile/preferences',
   );
@@ -188,6 +189,89 @@ class AuthApi {
       final String backendMessage =
           payload['message']?.toString() ??
           'Failed to save your genre preferences.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchProfile() async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to view your profile.');
+    }
+
+    try {
+      final http.Response response = await http
+          .get(_profileUri, headers: _headers(token: token))
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return payload;
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to fetch profile.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProfile({
+    String? email,
+    String? profileVisibility,
+  }) async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to update your profile.');
+    }
+
+    final Map<String, dynamic> body = <String, dynamic>{};
+    if (email != null) {
+      body['email'] = email.trim().toLowerCase();
+    }
+    if (profileVisibility != null) {
+      body['profileVisibility'] = profileVisibility.trim().toLowerCase();
+    }
+
+    if (body.isEmpty) {
+      throw AuthApiException('No profile updates were provided.');
+    }
+
+    try {
+      final http.Response response = await http
+          .patch(
+            _profileUri,
+            headers: _headers(json: true, token: token),
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final dynamic userPayload = payload['user'];
+        if (userPayload is Map) {
+          AuthSession.currentUser = Map<String, dynamic>.from(userPayload);
+        }
+        return payload;
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to update profile.';
       throw AuthApiException(backendMessage);
     } on AuthApiException {
       rethrow;
