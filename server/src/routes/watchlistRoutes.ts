@@ -49,7 +49,7 @@ router.get("/:userId", async (req: AuthRequest, res: Response) => {
 // Add to watchlist
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { imdbID, status, userRating, title, poster } = req.body;
+		const { imdbID, status, userRating, title, poster, isFavorite } = req.body;
 		const userId = req.user?.id;
 
 		if (watchlistDebug) {
@@ -83,6 +83,7 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 			userRating,
 			title,
 			poster,
+			isFavorite: typeof isFavorite === "boolean" ? isFavorite : undefined,
 		});
 
 		await watchlistItem.save();
@@ -95,13 +96,26 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 // Update watchlist item
 router.put("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { status, userRating } = req.body;
+		const { status, userRating, isFavorite } = req.body;
 
-		const watchlistItem = await Watchlist.findByIdAndUpdate(
-			req.params.id,
-			{ status, userRating },
-			{ new: true }
-		);
+		const update: Record<string, unknown> = {};
+		if (typeof status === "string") {
+			update.status = status;
+		}
+		if (typeof userRating === "number") {
+			update.userRating = userRating;
+		}
+		if (typeof isFavorite === "boolean") {
+			update.isFavorite = isFavorite;
+		}
+
+		if (Object.keys(update).length == 0) {
+			return res.status(400).json({ message: "No updates provided" });
+		}
+
+		const watchlistItem = await Watchlist.findByIdAndUpdate(req.params.id, update, {
+			new: true,
+		});
 
 		if (!watchlistItem) {
 			return res.status(404).json({ message: "Watchlist item not found" });

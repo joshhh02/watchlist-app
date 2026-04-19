@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthApiException implements Exception {
   AuthApiException(this.message);
@@ -116,6 +117,7 @@ class WatchlistItem {
     required this.status,
     required this.title,
     required this.poster,
+    required this.isFavorite,
     required this.dateAdded,
   });
 
@@ -124,6 +126,7 @@ class WatchlistItem {
   final String status;
   final String title;
   final String poster;
+  final bool isFavorite;
   final DateTime dateAdded;
 
   factory WatchlistItem.fromJson(Map<String, dynamic> json) {
@@ -134,7 +137,26 @@ class WatchlistItem {
       status: json['status']?.toString() ?? 'plan_to_watch',
       title: json['title']?.toString() ?? 'Untitled',
       poster: json['poster']?.toString() ?? '',
+      isFavorite: json['isFavorite'] == true,
       dateAdded: DateTime.tryParse(rawDate) ?? DateTime.now(),
+    );
+  }
+
+  WatchlistItem copyWith({
+    String? status,
+    String? title,
+    String? poster,
+    bool? isFavorite,
+    DateTime? dateAdded,
+  }) {
+    return WatchlistItem(
+      id: id,
+      imdbID: imdbID,
+      status: status ?? this.status,
+      title: title ?? this.title,
+      poster: poster ?? this.poster,
+      isFavorite: isFavorite ?? this.isFavorite,
+      dateAdded: dateAdded ?? this.dateAdded,
     );
   }
 }
@@ -158,6 +180,54 @@ class AuthSession {
 }
 
 class AuthApi {
+  static const String _localFavoritesKey = 'watchit_favorite_imdb_ids';
+
+  static bool get _useLocalFavorites {
+    // Only use device-local favorites when NOT using the website's API.
+    // This keeps mobile behavior consistent with the website when pointing at
+    // the same backend (watch-it.xyz).
+    return !baseUrl.contains('watch-it.xyz');
+  }
+
+  static Future<Set<String>> _getLocalFavorites() async {
+    if (!_useLocalFavorites) {
+      return <String>{};
+    }
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList(_localFavoritesKey) ?? <String>[])
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet();
+  }
+
+  static Future<void> setLocalFavorite({
+    required String imdbID,
+    required bool isFavorite,
+  }) async {
+    if (!_useLocalFavorites) {
+      return;
+    }
+    final String trimmed = imdbID.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final Set<String> current =
+        (prefs.getStringList(_localFavoritesKey) ?? <String>[])
+            .map((String id) => id.trim())
+            .where((String id) => id.isNotEmpty)
+            .toSet();
+
+    if (isFavorite) {
+      current.add(trimmed);
+    } else {
+      current.remove(trimmed);
+    }
+
+    await prefs.setStringList(_localFavoritesKey, current.toList());
+  }
+
   static const String _apiUrlFromEnv = String.fromEnvironment(
     'WATCHIT_API_URL',
   );
@@ -165,12 +235,23 @@ class AuthApi {
   static const String _mobileOrigin = 'http://watch-it.xyz';
 
   static String get baseUrl {
-    if (_apiUrlFromEnv.isNotEmpty) {
-      return _normalizeBaseUrl(_apiUrlFromEnv);
+    final String resolved = _apiUrlFromEnv.isNotEmpty
+        ? _normalizeBaseUrl(_apiUrlFromEnv)
+        : _prodBaseUrl;
+
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final Uri uri = Uri.parse(resolved);
+        if (uri.host == 'localhost' || uri.host == '127.0.0.1') {
+          return uri.replace(host: '10.0.2.2').toString();
+        }
+      } catch (_) {
+        // Fall through to resolved.
+      }
     }
 
     // Match the website backend/database by default in all build modes.
-    return _prodBaseUrl;
+    return resolved;
   }
 
   static String _normalizeBaseUrl(String input) {
@@ -186,8 +267,12 @@ class AuthApi {
     }
 
     // Work around deployed API CORS policy that currently expects website origin.
+    // For local dev, omit Origin so the server can allow the request.
     if (!kIsWeb) {
-      headers['Origin'] = _mobileOrigin;
+      final String resolvedBaseUrl = baseUrl;
+      if (resolvedBaseUrl.contains('watch-it.xyz')) {
+        headers['Origin'] = _mobileOrigin;
+      }
     }
 
     if (token != null && token.isNotEmpty) {
@@ -518,11 +603,28 @@ class AuthApi {
         return <WatchlistItem>[];
       }
 
-      return decoded
+      final List<WatchlistItem> items = decoded
           .whereType<Map>()
           .map(
             (dynamic item) =>
                 WatchlistItem.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList();
+
+      if (!_useLocalFavorites) {
+        return items;
+      }
+
+      final Set<String> favorites = await _getLocalFavorites();
+      if (favorites.isEmpty) {
+        return items;
+      }
+
+      return items
+          .map(
+            (WatchlistItem item) => favorites.contains(item.imdbID)
+                ? item.copyWith(isFavorite: true)
+                : item,
           )
           .toList();
     } on AuthApiException {
@@ -541,6 +643,7 @@ class AuthApi {
     String? title,
     String? poster,
     String status = 'plan_to_watch',
+    bool? isFavorite,
   }) async {
     final String? token = AuthSession.authToken;
     if (token == null || token.isEmpty) {
@@ -562,6 +665,7 @@ class AuthApi {
               'status': status,
               if (title != null) 'title': title,
               if (poster != null) 'poster': poster,
+              if (isFavorite != null) 'isFavorite': isFavorite,
             }),
           )
           .timeout(const Duration(seconds: 15));
@@ -570,7 +674,13 @@ class AuthApi {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final dynamic data = payload['data'];
         if (data is Map) {
-          return WatchlistItem.fromJson(Map<String, dynamic>.from(data));
+          final WatchlistItem item = WatchlistItem.fromJson(
+            Map<String, dynamic>.from(data),
+          );
+          if (_useLocalFavorites && isFavorite == true) {
+            await setLocalFavorite(imdbID: item.imdbID, isFavorite: true);
+          }
+          return item;
         }
         throw AuthApiException('Added to watchlist.');
       }
@@ -628,6 +738,7 @@ class AuthApi {
     required String id,
     String? status,
     int? userRating,
+    bool? isFavorite,
   }) async {
     final String? token = AuthSession.authToken;
     if (token == null || token.isEmpty) {
@@ -646,11 +757,18 @@ class AuthApi {
     if (userRating != null) {
       body['userRating'] = userRating;
     }
+    if (isFavorite != null) {
+      body['isFavorite'] = isFavorite;
+    }
     if (body.isEmpty) {
       throw AuthApiException('No watchlist updates were provided.');
     }
 
     try {
+      if (kDebugMode) {
+        print('🚀 Request: PUT ${_watchlistItemUri(trimmed)}');
+        print('📤 Body: $body');
+      }
       final http.Response response = await http
           .put(
             _watchlistItemUri(trimmed),
@@ -661,11 +779,18 @@ class AuthApi {
 
       final Map<String, dynamic> payload = _decodeJson(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (kDebugMode) {
+          print('✅ Success (${response.statusCode}): ${payload['message']}');
+        }
         final dynamic data = payload['data'];
         if (data is Map) {
           return WatchlistItem.fromJson(Map<String, dynamic>.from(data));
         }
         throw AuthApiException('Updated watchlist item.');
+      }
+
+      if (kDebugMode) {
+        print('❌ Failed (${response.statusCode}): ${payload['message']}');
       }
 
       final String backendMessage =

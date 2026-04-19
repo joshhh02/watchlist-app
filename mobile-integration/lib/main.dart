@@ -635,6 +635,12 @@ class _CurationPageState extends State<_CurationPage> {
         .length;
   }
 
+  int _countFavorites() {
+    return _watchlistItems
+        .where((WatchlistItem item) => item.isFavorite == true)
+        .length;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1130,6 +1136,7 @@ class _CurationPageState extends State<_CurationPage> {
   Widget _buildProfilePage() {
     final int wantToWatchCount = _countByStatus('plan_to_watch');
     final int alreadyWatchedCount = _countByStatus('completed');
+    final int favoritesCount = _countFavorites();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
@@ -1276,7 +1283,7 @@ class _CurationPageState extends State<_CurationPage> {
               const SizedBox(height: 16),
               _ProfileListCard(
                 title: 'Favorites',
-                subtitle: _formatTitleCount(0),
+                subtitle: _formatTitleCount(favoritesCount),
                 accentGradient: LinearGradient(
                   colors: [Color(0xFFE0DEEE), Color(0xFFADC2F2)],
                   begin: Alignment.topCenter,
@@ -1284,7 +1291,7 @@ class _CurationPageState extends State<_CurationPage> {
                 ),
                 artIcon: Icons.change_history,
                 artColor: Color(0xFF6A7FC9),
-                onTap: () => _showSnackBar('Favorites is coming soon.'),
+                onTap: () => _openMyWatchlist(_MyWatchlistView.favorites),
               ),
               if (_isProfileLoading) ...[
                 const SizedBox(height: 20),
@@ -1676,25 +1683,27 @@ class _MainFeedPageState extends State<_MainFeedPage> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   username,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Colors.black,
+                    height: 1.0,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 PopupMenuButton<String>(
                   tooltip: 'User menu',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 120),
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF3F4F6),
                       shape: BoxShape.circle,
@@ -1702,7 +1711,7 @@ class _MainFeedPageState extends State<_MainFeedPage> {
                     ),
                     child: const Icon(
                       Icons.menu,
-                      size: 18,
+                      size: 16,
                       color: Colors.black,
                     ),
                   ),
@@ -2160,6 +2169,7 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
   bool _isRemoving = false;
   WatchlistItem? _watchlistItem;
   bool _watchlistChanged = false;
+  bool _isTogglingFavorite = false;
 
   @override
   void initState() {
@@ -2350,6 +2360,115 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
     }
   }
 
+  Future<void> _toggleFavorite() async {
+    if (_isTogglingFavorite) {
+      return;
+    }
+
+    final WatchlistItem? originalItem = _watchlistItem;
+
+    setState(() {
+      _isTogglingFavorite = true;
+      _error = null;
+    });
+
+    try {
+      final WatchlistItem? current = originalItem;
+      final bool previousFavorite = current?.isFavorite == true;
+      if (current != null && current.id.trim().isNotEmpty) {
+        final bool nextFavorite = !previousFavorite;
+
+        setState(() {
+          _watchlistItem = current.copyWith(isFavorite: nextFavorite);
+          _added = true;
+          _watchlistChanged = true;
+        });
+
+        await AuthApi.setLocalFavorite(
+          imdbID: current.imdbID,
+          isFavorite: nextFavorite,
+        );
+
+        final WatchlistItem updated = await AuthApi.updateWatchlistItem(
+          id: current.id,
+          isFavorite: nextFavorite,
+        );
+
+        final WatchlistItem merged = updated.copyWith(isFavorite: nextFavorite);
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _watchlistItem = merged;
+          _added = true;
+          _watchlistChanged = true;
+        });
+
+        _showSnackBar(
+          merged.isFavorite == true
+              ? 'Added to favorites.'
+              : 'Removed from favorites.',
+        );
+      } else {
+        final WatchlistItem created = await AuthApi.addToWatchlist(
+          imdbID: widget.imdbID,
+          title: _detail?.title ?? widget.title,
+          poster: _detail?.poster.isNotEmpty == true
+              ? _detail!.poster
+              : widget.poster,
+          isFavorite: true,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _watchlistItem = created;
+          _added = true;
+          _watchlistChanged = true;
+        });
+        _showSnackBar('Added to favorites.');
+      }
+    } on AuthApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _watchlistItem = originalItem;
+        });
+      }
+
+      if (originalItem != null) {
+        await AuthApi.setLocalFavorite(
+          imdbID: originalItem.imdbID,
+          isFavorite: originalItem.isFavorite == true,
+        );
+      }
+      _showSnackBar(error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _watchlistItem = originalItem;
+        });
+      }
+
+      if (originalItem != null) {
+        await AuthApi.setLocalFavorite(
+          imdbID: originalItem.imdbID,
+          isFavorite: originalItem.isFavorite == true,
+        );
+      }
+      _showSnackBar('Could not update favorites right now.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTogglingFavorite = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final String title = _detail?.title ?? widget.title;
@@ -2376,6 +2495,16 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
+          actions: [
+            IconButton(
+              onPressed: _isTogglingFavorite ? null : _toggleFavorite,
+              icon: Icon(
+                _watchlistItem?.isFavorite == true
+                    ? Icons.star
+                    : Icons.star_border,
+              ),
+            ),
+          ],
         ),
         body: RefreshIndicator(
           onRefresh: _load,
@@ -2541,7 +2670,7 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
   }
 }
 
-enum _MyWatchlistView { all, watchlist, watched }
+enum _MyWatchlistView { all, watchlist, watched, favorites }
 
 class _MyWatchlistPage extends StatefulWidget {
   const _MyWatchlistPage({this.view = _MyWatchlistView.all});
@@ -2557,6 +2686,8 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
   String? _error;
   List<WatchlistItem> _items = <WatchlistItem>[];
   bool _changed = false;
+
+  final Set<String> _favoriteInFlight = <String>{};
 
   @override
   void initState() {
@@ -2638,6 +2769,7 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
   Future<void> _remove(WatchlistItem item) async {
     try {
       await AuthApi.deleteWatchlistItem(item.id);
+      await AuthApi.setLocalFavorite(imdbID: item.imdbID, isFavorite: false);
       if (!mounted) {
         return;
       }
@@ -2653,6 +2785,98 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
     }
   }
 
+  Future<void> _toggleFavorite(WatchlistItem item) async {
+    final String id = item.id.trim();
+    if (id.isEmpty || _favoriteInFlight.contains(id)) {
+      return;
+    }
+
+    final bool previousFavorite = item.isFavorite == true;
+    final bool nextFavorite = !previousFavorite;
+
+    setState(() {
+      _favoriteInFlight.add(id);
+      _changed = true;
+      _items = _items
+          .map(
+            (WatchlistItem i) =>
+                i.id == item.id ? i.copyWith(isFavorite: nextFavorite) : i,
+          )
+          .toList();
+    });
+
+    await AuthApi.setLocalFavorite(
+      imdbID: item.imdbID,
+      isFavorite: nextFavorite,
+    );
+
+    try {
+      final WatchlistItem updated = await AuthApi.updateWatchlistItem(
+        id: item.id,
+        isFavorite: nextFavorite,
+      );
+
+      final WatchlistItem merged = updated.copyWith(isFavorite: nextFavorite);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _favoriteInFlight.remove(id);
+        _items = _items
+            .map((WatchlistItem i) => i.id == merged.id ? merged : i)
+            .toList();
+      });
+
+      _showSnackBar(
+        merged.isFavorite == true
+            ? 'Added to favorites.'
+            : 'Removed from favorites.',
+      );
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _favoriteInFlight.remove(id);
+        _items = _items
+            .map(
+              (WatchlistItem i) => i.id == item.id
+                  ? i.copyWith(isFavorite: previousFavorite)
+                  : i,
+            )
+            .toList();
+      });
+
+      await AuthApi.setLocalFavorite(
+        imdbID: item.imdbID,
+        isFavorite: previousFavorite,
+      );
+      _showSnackBar(error.message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _favoriteInFlight.remove(id);
+        _items = _items
+            .map(
+              (WatchlistItem i) => i.id == item.id
+                  ? i.copyWith(isFavorite: previousFavorite)
+                  : i,
+            )
+            .toList();
+      });
+
+      await AuthApi.setLocalFavorite(
+        imdbID: item.imdbID,
+        isFavorite: previousFavorite,
+      );
+      _showSnackBar('Could not update favorites right now.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<WatchlistItem> watchlist = _items
@@ -2662,12 +2886,24 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
         .where((WatchlistItem item) => item.status == 'completed')
         .toList();
 
-    final bool showWatchlist = widget.view != _MyWatchlistView.watched;
-    final bool showWatched = widget.view != _MyWatchlistView.watchlist;
+    final List<WatchlistItem> favorites = _items
+        .where((WatchlistItem item) => item.isFavorite == true)
+        .toList();
+
+    final bool showFavorites = widget.view == _MyWatchlistView.favorites;
+    final bool showWatchlist = showFavorites
+        ? false
+        : widget.view != _MyWatchlistView.watched;
+    final bool showWatched = showFavorites
+        ? false
+        : widget.view != _MyWatchlistView.watchlist;
+
     final String title = widget.view == _MyWatchlistView.watchlist
         ? 'Want to Watch'
         : widget.view == _MyWatchlistView.watched
         ? 'Already Watched'
+        : widget.view == _MyWatchlistView.favorites
+        ? 'Favorites'
         : 'My Watchlist';
 
     return WillPopScope(
@@ -2708,6 +2944,31 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
+                    if (showFavorites) ...[
+                      if (favorites.isEmpty)
+                        const Text(
+                          'No favorites yet.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF6B7280),
+                          ),
+                        )
+                      else
+                        ...favorites.map(
+                          (WatchlistItem item) => _WatchlistItemCard(
+                            item: item,
+                            onToggleFavorite: () => _toggleFavorite(item),
+                            primaryLabel: item.status == 'completed'
+                                ? null
+                                : 'Mark Watched',
+                            onPrimary: item.status == 'completed'
+                                ? null
+                                : () => _markWatched(item),
+                            secondaryLabel: 'Remove',
+                            onSecondary: () => _remove(item),
+                          ),
+                        ),
+                    ],
                     if (showWatchlist) ...[
                       const Text(
                         'Watchlist',
@@ -2730,6 +2991,7 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
                         ...watchlist.map(
                           (WatchlistItem item) => _WatchlistItemCard(
                             item: item,
+                            onToggleFavorite: () => _toggleFavorite(item),
                             primaryLabel: 'Mark Watched',
                             onPrimary: () => _markWatched(item),
                             secondaryLabel: 'Remove',
@@ -2761,6 +3023,7 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
                         ...watched.map(
                           (WatchlistItem item) => _WatchlistItemCard(
                             item: item,
+                            onToggleFavorite: () => _toggleFavorite(item),
                             primaryLabel: null,
                             onPrimary: null,
                             secondaryLabel: 'Remove',
@@ -2779,6 +3042,7 @@ class _MyWatchlistPageState extends State<_MyWatchlistPage> {
 class _WatchlistItemCard extends StatelessWidget {
   const _WatchlistItemCard({
     required this.item,
+    required this.onToggleFavorite,
     required this.primaryLabel,
     required this.onPrimary,
     required this.secondaryLabel,
@@ -2786,6 +3050,7 @@ class _WatchlistItemCard extends StatelessWidget {
   });
 
   final WatchlistItem item;
+  final VoidCallback onToggleFavorite;
   final String? primaryLabel;
   final VoidCallback? onPrimary;
   final String secondaryLabel;
@@ -2828,13 +3093,29 @@ class _WatchlistItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title.isEmpty ? item.imdbID : item.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.title.isEmpty ? item.imdbID : item.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: onToggleFavorite,
+                        icon: Icon(
+                          item.isFavorite == true
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   Row(
