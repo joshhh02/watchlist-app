@@ -637,14 +637,6 @@ class _CurationPageState extends State<_CurationPage> {
       return;
     }
 
-    if (!widget.saveOnNext) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const _MainFeedPage()),
-        (route) => false,
-      );
-      return;
-    }
-
     setState(() {
       _isSubmitting = true;
       _serverError = null;
@@ -768,7 +760,7 @@ class _CurationPageState extends State<_CurationPage> {
               controller: introController,
               minLines: 4,
               maxLines: 7,
-              maxLength: 300,
+              maxLength: 500,
               decoration: const InputDecoration(
                 hintText: 'Tell people about yourself...',
                 border: OutlineInputBorder(),
@@ -795,12 +787,63 @@ class _CurationPageState extends State<_CurationPage> {
 
     final String nextIntro = introController.text.trim();
     setState(() {
-      _introduction = nextIntro;
+      _isProfileSaving = true;
+      _serverError = null;
     });
-    if (AuthSession.currentUser != null) {
-      AuthSession.currentUser!['introduction'] = nextIntro;
+
+    try {
+      final Map<String, dynamic> payload = await AuthApi.updateProfile(
+        introduction: nextIntro,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final dynamic userPayload = payload['user'];
+      if (userPayload is Map) {
+        final Map<String, dynamic> profile = <String, dynamic>{
+          for (final MapEntry<dynamic, dynamic> entry in userPayload.entries)
+            entry.key.toString(): entry.value,
+        };
+        setState(() {
+          _introduction =
+              profile['introduction']?.toString().trim() ?? nextIntro;
+        });
+      } else {
+        setState(() {
+          _introduction = nextIntro;
+        });
+      }
+
+      if (AuthSession.currentUser != null) {
+        AuthSession.currentUser!['introduction'] = _introduction;
+      }
+
+      _showSnackBar('Introduction updated.');
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _serverError = error.message;
+      });
+      _showSnackBar(error.message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _serverError = 'Could not update your introduction right now.';
+      });
+      _showSnackBar('Could not update your introduction right now.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProfileSaving = false;
+        });
+      }
     }
-    _showSnackBar('Introduction updated.');
   }
 
   Future<void> _saveProfileUpdates({
@@ -1307,7 +1350,7 @@ class _ProfileEditPageState extends State<_ProfileEditPage> {
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: _selectedVisibility,
+                  initialValue: _selectedVisibility,
                   decoration: const InputDecoration(
                     labelText: 'Profile Visibility',
                   ),
@@ -1490,6 +1533,12 @@ class _MainFeedPageState extends State<_MainFeedPage> {
   List<FriendFeedItem> _feedItems = <FriendFeedItem>[];
   List<RecommendedMovie> _recommendedMovies = <RecommendedMovie>[];
 
+  void _openDiscover() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const _DiscoverPage()));
+  }
+
   void _openMyProfile() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const _CurationPage(saveOnNext: false)),
@@ -1663,6 +1712,32 @@ class _MainFeedPageState extends State<_MainFeedPage> {
             ? ListView(
                 padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
                 children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 160),
+                      child: ElevatedButton(
+                        onPressed: _openDiscover,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF3F4F6),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                          ),
+                        ),
+                        child: const Text('Discover'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   const Center(
                     child: Text(
                       'Nothing to see here yet...',
@@ -1685,7 +1760,7 @@ class _MainFeedPageState extends State<_MainFeedPage> {
                   const SizedBox(height: 12),
                   if (_recommendedMovies.isEmpty)
                     const Text(
-                      'Select genres to start getting movie picks.',
+                      'Select genres to start getting picks.',
                       style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
                     )
                   else
@@ -1699,11 +1774,225 @@ class _MainFeedPageState extends State<_MainFeedPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 itemBuilder: (BuildContext context, int index) {
-                  final FriendFeedItem item = _feedItems[index];
+                  if (index == 0) {
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 160),
+                        child: ElevatedButton(
+                          onPressed: _openDiscover,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF3F4F6),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 14,
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            ),
+                          ),
+                          child: const Text('Discover'),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final FriendFeedItem item = _feedItems[index - 1];
                   return _FeedStatusCard(item: item);
                 },
-                separatorBuilder: (_, index) => const SizedBox(height: 12),
-                itemCount: _feedItems.length,
+                separatorBuilder: (_, index) => index == 0
+                    ? const SizedBox(height: 20)
+                    : const SizedBox(height: 12),
+                itemCount: _feedItems.length + 1,
+              ),
+      ),
+    );
+  }
+}
+
+class _DiscoverPage extends StatefulWidget {
+  const _DiscoverPage();
+
+  @override
+  State<_DiscoverPage> createState() => _DiscoverPageState();
+}
+
+class _DiscoverPageState extends State<_DiscoverPage> {
+  bool _isLoading = true;
+  String? _error;
+  List<RecommendedMovie> _results = <RecommendedMovie>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  List<String> _currentGenres() {
+    final dynamic rawGenres = AuthSession.currentUser?['preferredGenres'];
+    return rawGenres is List
+        ? rawGenres.map((dynamic value) => value.toString()).toList()
+        : <String>[];
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final List<String> genres = _currentGenres();
+    if (genres.isEmpty) {
+      setState(() {
+        _results = <RecommendedMovie>[];
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final List<RecommendedMovie> picks =
+          await AuthApi.fetchRecommendedMoviesByGenres(genres);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _results = picks;
+      });
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = 'Could not load Discover right now.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _openGenreSetup() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const _CurationPage(saveOnNext: false)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> genres = _currentGenres();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Discover',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? ListView(
+                children: [
+                  const SizedBox(height: 120),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFB91C1C),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : genres.isEmpty
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+                children: [
+                  const Text(
+                    'Pick genres to get suggestions',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Discover uses the genres you chose when setting up your account.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
+                  ),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _openGenreSetup,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Color(0xFFD1D5DB)),
+                        ),
+                      ),
+                      child: const Text('Set Genres'),
+                    ),
+                  ),
+                ],
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                children: [
+                  ..._results.map(
+                    (RecommendedMovie movie) =>
+                        _RecommendationCard(movie: movie),
+                  ),
+                  if (_results.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 80),
+                      child: Center(
+                        child: Text(
+                          'No suggestions found right now.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
       ),
     );
@@ -1717,6 +2006,12 @@ class _RecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String mediaType = movie.type.toLowerCase() == 'series'
+        ? 'TV Series'
+        : movie.type.toLowerCase() == 'movie'
+        ? 'Movie'
+        : 'Media';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -1746,7 +2041,7 @@ class _RecommendationCard extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          movie.year.isEmpty ? 'Movie' : movie.year,
+          movie.year.isEmpty ? mediaType : '${movie.year} • $mediaType',
           style: const TextStyle(color: Color(0xFF6B7280)),
         ),
       ),

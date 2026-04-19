@@ -54,12 +54,14 @@ class RecommendedMovie {
     required this.imdbID,
     required this.title,
     required this.year,
+    required this.type,
     this.poster,
   });
 
   final String imdbID;
   final String title;
   final String year;
+  final String type;
   final String? poster;
 
   factory RecommendedMovie.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,7 @@ class RecommendedMovie {
       imdbID: json['imdbID']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Untitled',
       year: json['year']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
       poster: json['poster']?.toString(),
     );
   }
@@ -91,7 +94,9 @@ class AuthSession {
 }
 
 class AuthApi {
-  static const String _apiUrlFromEnv = String.fromEnvironment('WATCHIT_API_URL');
+  static const String _apiUrlFromEnv = String.fromEnvironment(
+    'WATCHIT_API_URL',
+  );
   static const String _prodBaseUrl = 'http://watch-it.xyz/api';
   static const String _mobileOrigin = 'http://watch-it.xyz';
 
@@ -109,10 +114,7 @@ class AuthApi {
     return trimmed.endsWith('/api') ? trimmed : '$trimmed/api';
   }
 
-  static Map<String, String> _headers({
-    bool json = false,
-    String? token,
-  }) {
+  static Map<String, String> _headers({bool json = false, String? token}) {
     final Map<String, String> headers = <String, String>{};
 
     if (json) {
@@ -234,6 +236,7 @@ class AuthApi {
   static Future<Map<String, dynamic>> updateProfile({
     String? email,
     String? profileVisibility,
+    String? introduction,
   }) async {
     final String? token = AuthSession.authToken;
     if (token == null || token.isEmpty) {
@@ -246,6 +249,9 @@ class AuthApi {
     }
     if (profileVisibility != null) {
       body['profileVisibility'] = profileVisibility.trim().toLowerCase();
+    }
+    if (introduction != null) {
+      body['introduction'] = introduction.trim();
     }
 
     if (body.isEmpty) {
@@ -292,10 +298,7 @@ class AuthApi {
 
     try {
       final http.Response response = await http
-          .get(
-            _friendsFeedUri,
-            headers: _headers(token: token),
-          )
+          .get(_friendsFeedUri, headers: _headers(token: token))
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -344,43 +347,47 @@ class AuthApi {
         .take(3)
         .toList();
 
+    const List<String> mediaTypes = <String>['movie', 'series'];
+
     for (final String genre in limitedGenres) {
-      try {
-        final Uri uri = _mediaSearchUri.replace(
-          queryParameters: <String, String>{'title': genre, 'type': 'movie'},
-        );
-
-        final http.Response response = await http
-          .get(uri, headers: _headers())
-            .timeout(const Duration(seconds: 15));
-
-        if (response.statusCode < 200 || response.statusCode >= 300) {
-          continue;
-        }
-
-        final Map<String, dynamic> payload = _decodeJson(response.body);
-        final dynamic rawResults = payload['results'];
-        if (rawResults is! List) {
-          continue;
-        }
-
-        for (final dynamic item in rawResults.whereType<Map>()) {
-          final RecommendedMovie movie = RecommendedMovie.fromJson(
-            Map<String, dynamic>.from(item as Map),
+      for (final String type in mediaTypes) {
+        try {
+          final Uri uri = _mediaSearchUri.replace(
+            queryParameters: <String, String>{'title': genre, 'type': type},
           );
-          if (movie.imdbID.isEmpty || seenIds.contains(movie.imdbID)) {
+
+          final http.Response response = await http
+              .get(uri, headers: _headers())
+              .timeout(const Duration(seconds: 15));
+
+          if (response.statusCode < 200 || response.statusCode >= 300) {
             continue;
           }
 
-          seenIds.add(movie.imdbID);
-          results.add(movie);
-
-          if (results.length >= 8) {
-            return results;
+          final Map<String, dynamic> payload = _decodeJson(response.body);
+          final dynamic rawResults = payload['results'];
+          if (rawResults is! List) {
+            continue;
           }
+
+          for (final dynamic item in rawResults.whereType<Map>()) {
+            final RecommendedMovie movie = RecommendedMovie.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            );
+            if (movie.imdbID.isEmpty || seenIds.contains(movie.imdbID)) {
+              continue;
+            }
+
+            seenIds.add(movie.imdbID);
+            results.add(movie);
+
+            if (results.length >= 12) {
+              return results;
+            }
+          }
+        } catch (_) {
+          // Ignore per-genre lookup failures and continue building recommendations.
         }
-      } catch (_) {
-        // Ignore per-genre lookup failures and continue building recommendations.
       }
     }
 
@@ -397,11 +404,7 @@ class AuthApi {
         print('📤 Body: $body');
       }
       final http.Response response = await http
-          .post(
-            uri,
-            headers: _headers(json: true),
-            body: jsonEncode(body),
-          )
+          .post(uri, headers: _headers(json: true), body: jsonEncode(body))
           .timeout(const Duration(seconds: 15));
 
       final Map<String, dynamic> payload = _decodeJson(response.body);
