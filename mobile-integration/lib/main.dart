@@ -933,6 +933,18 @@ class _CurationPageState extends State<_CurationPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _openMyWatchlist([
+    _MyWatchlistView view = _MyWatchlistView.all,
+  ]) async {
+    final bool? changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => _MyWatchlistPage(view: view)),
+    );
+
+    if (changed == true) {
+      await _loadProfile();
+    }
+  }
+
   Widget _buildProfileTopNav() {
     return Container(
       decoration: const BoxDecoration(
@@ -958,9 +970,7 @@ class _CurationPageState extends State<_CurationPage> {
             ),
             const SizedBox(width: 14),
             TextButton(
-              onPressed: () {
-                _showSnackBar('My Watchlist is coming soon on mobile.');
-              },
+              onPressed: _openMyWatchlist,
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF374151),
                 textStyle: const TextStyle(
@@ -1248,6 +1258,7 @@ class _CurationPageState extends State<_CurationPage> {
                 ),
                 artIcon: Icons.circle,
                 artColor: Color(0xFFE238A5),
+                onTap: () => _openMyWatchlist(_MyWatchlistView.watchlist),
               ),
               const SizedBox(height: 16),
               _ProfileListCard(
@@ -1260,6 +1271,7 @@ class _CurationPageState extends State<_CurationPage> {
                 ),
                 artIcon: Icons.terrain,
                 artColor: Color(0xFF355E72),
+                onTap: () => _openMyWatchlist(_MyWatchlistView.watched),
               ),
               const SizedBox(height: 16),
               _ProfileListCard(
@@ -1272,6 +1284,7 @@ class _CurationPageState extends State<_CurationPage> {
                 ),
                 artIcon: Icons.change_history,
                 artColor: Color(0xFF6A7FC9),
+                onTap: () => _showSnackBar('Favorites is coming soon.'),
               ),
               if (_isProfileLoading) ...[
                 const SizedBox(height: 20),
@@ -1438,6 +1451,7 @@ class _ProfileListCard extends StatelessWidget {
     required this.accentGradient,
     required this.artIcon,
     required this.artColor,
+    this.onTap,
   });
 
   final String title;
@@ -1445,67 +1459,83 @@ class _ProfileListCard extends StatelessWidget {
   final Gradient accentGradient;
   final IconData artIcon;
   final Color artColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 318,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE9E9EC),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 118),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                      height: 1,
-                    ),
+        child: Container(
+          width: double.infinity,
+          height: 318,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE9E9EC),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 118),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF696969),
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF696969),
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 104,
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: accentGradient),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(artIcon, size: 66, color: artColor),
-                    const SizedBox(width: 14),
-                    Icon(artIcon, size: 46, color: artColor.withOpacity(0.75)),
-                    const SizedBox(width: 14),
-                    Icon(artIcon, size: 56, color: artColor.withOpacity(0.9)),
-                  ],
                 ),
-              ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 104,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(gradient: accentGradient),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(artIcon, size: 66, color: artColor),
+                        const SizedBox(width: 14),
+                        Icon(
+                          artIcon,
+                          size: 46,
+                          color: artColor.withOpacity(0.75),
+                        ),
+                        const SizedBox(width: 14),
+                        Icon(
+                          artIcon,
+                          size: 56,
+                          color: artColor.withOpacity(0.9),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1875,11 +1905,31 @@ class _DiscoverPageState extends State<_DiscoverPage> {
     try {
       final List<RecommendedMovie> picks =
           await AuthApi.fetchRecommendedMoviesByGenres(genres);
+
+      Set<String> excludedIds = <String>{};
+      try {
+        final List<WatchlistItem> watchlist = await AuthApi.fetchMyWatchlist();
+        excludedIds = watchlist
+            .map((WatchlistItem item) => item.imdbID)
+            .where((String id) => id.trim().isNotEmpty)
+            .toSet();
+      } catch (_) {
+        // If watchlist fails to load, still show Discover picks.
+      }
+
+      final List<RecommendedMovie> filtered = excludedIds.isEmpty
+          ? picks
+          : picks
+                .where(
+                  (RecommendedMovie movie) =>
+                      !excludedIds.contains(movie.imdbID.trim()),
+                )
+                .toList();
       if (!mounted) {
         return;
       }
       setState(() {
-        _results = picks;
+        _results = filtered;
       });
     } on AuthApiException catch (error) {
       if (!mounted) {
@@ -1992,8 +2042,10 @@ class _DiscoverPageState extends State<_DiscoverPage> {
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
                 children: [
                   ..._results.map(
-                    (RecommendedMovie movie) =>
-                        _RecommendationCard(movie: movie),
+                    (RecommendedMovie movie) => _RecommendationCard(
+                      movie: movie,
+                      onWatchlistChanged: _load,
+                    ),
                   ),
                   if (_results.isEmpty)
                     const Padding(
@@ -2017,9 +2069,10 @@ class _DiscoverPageState extends State<_DiscoverPage> {
 }
 
 class _RecommendationCard extends StatelessWidget {
-  const _RecommendationCard({required this.movie});
+  const _RecommendationCard({required this.movie, this.onWatchlistChanged});
 
   final RecommendedMovie movie;
+  final VoidCallback? onWatchlistChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -2040,8 +2093,8 @@ class _RecommendationCard extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         onTap: movie.imdbID.trim().isEmpty
             ? null
-            : () {
-                Navigator.of(context).push(
+            : () async {
+                final bool? changed = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
                     builder: (_) => _MediaDetailPage(
                       imdbID: movie.imdbID,
@@ -2050,6 +2103,10 @@ class _RecommendationCard extends StatelessWidget {
                     ),
                   ),
                 );
+
+                if (changed == true) {
+                  onWatchlistChanged?.call();
+                }
               },
         leading: movie.poster != null && movie.poster!.isNotEmpty
             ? ClipRRect(
@@ -2102,6 +2159,7 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
   bool _added = false;
   bool _isRemoving = false;
   WatchlistItem? _watchlistItem;
+  bool _watchlistChanged = false;
 
   @override
   void initState() {
@@ -2195,6 +2253,7 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
       setState(() {
         _added = true;
         _watchlistItem = item;
+        _watchlistChanged = true;
       });
       _showSnackBar('Added to watchlist!');
     } on AuthApiException catch (error) {
@@ -2219,6 +2278,7 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
         setState(() {
           _added = true;
           _watchlistItem = existing;
+          _watchlistChanged = true;
         });
       }
       _showSnackBar(msg);
@@ -2274,6 +2334,7 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
       setState(() {
         _added = false;
         _watchlistItem = null;
+        _watchlistChanged = true;
       });
       _showSnackBar('Removed from watchlist.');
     } on AuthApiException catch (error) {
@@ -2300,174 +2361,531 @@ class _MediaDetailPageState extends State<_MediaDetailPage> {
         ? 'TV Series'
         : _detail?.type.toLowerCase() == 'movie'
         ? 'Movie'
-        : '';
+        : 'Media';
     final List<String> genres = _detail?.genres ?? <String>[];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          title.isEmpty ? 'Details' : title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w700),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_watchlistChanged);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            title.isEmpty ? 'Details' : title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? ListView(
-                children: [
-                  const SizedBox(height: 120),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFFB91C1C),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  if (poster.isNotEmpty)
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+              ? ListView(
+                  children: [
+                    const SizedBox(height: 120),
                     Center(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          poster,
-                          width: 180,
-                          height: 260,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.movie,
-                            size: 90,
-                            color: Color(0xFF6B7280),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFFB91C1C),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                    )
-                  else
-                    const Center(
-                      child: Icon(
-                        Icons.movie,
-                        size: 90,
+                    ),
+                  ],
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    if (poster.isNotEmpty)
+                      Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.network(
+                            poster,
+                            width: 180,
+                            height: 260,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.movie,
+                              size: 90,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const Center(
+                        child: Icon(
+                          Icons.movie,
+                          size: 90,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        year,
+                        mediaType,
+                      ].where((String v) => v.trim().isNotEmpty).join(' • '),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF6B7280),
                       ),
                     ),
-                  const SizedBox(height: 16),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    [
-                      year,
-                      mediaType,
-                    ].where((String v) => v.trim().isNotEmpty).join(' • '),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                  if (genres.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: genres
-                          .take(6)
-                          .map(
-                            (String genre) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: const Color(0xFFE5E7EB),
+                    if (genres.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: genres
+                            .take(6)
+                            .map(
+                              (String genre) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: const Color(0xFFE5E7EB),
+                                  ),
+                                ),
+                                child: Text(
+                                  genre,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111827),
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                genre,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF111827),
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _added
-                          ? null
-                          : (_isAdding ? null : _addToWatchlist),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF101114),
-                        foregroundColor: Colors.white,
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            )
+                            .toList(),
                       ),
-                      child: Text(
-                        _added
-                            ? 'In Watchlist'
-                            : (_isAdding ? 'Adding...' : 'Add to Watchlist'),
-                      ),
-                    ),
-                  ),
-                  if (_added) ...[
-                    const SizedBox(height: 12),
+                    ],
+                    const SizedBox(height: 20),
                     SizedBox(
-                      height: 48,
+                      height: 50,
                       child: ElevatedButton(
-                        onPressed: _isRemoving ? null : _removeFromWatchlist,
+                        onPressed: _added
+                            ? null
+                            : (_isAdding ? null : _addToWatchlist),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF3F4F6),
-                          foregroundColor: Colors.black,
+                          backgroundColor: const Color(0xFF101114),
+                          foregroundColor: Colors.white,
                           textStyle: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: Color(0xFFD1D5DB)),
                           ),
                         ),
                         child: Text(
-                          _isRemoving ? 'Removing...' : 'Remove from Watchlist',
+                          _added
+                              ? 'In Watchlist'
+                              : (_isAdding ? 'Adding...' : 'Add to Watchlist'),
+                        ),
+                      ),
+                    ),
+                    if (_added) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _isRemoving ? null : _removeFromWatchlist,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF3F4F6),
+                            foregroundColor: Colors.black,
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            ),
+                          ),
+                          child: Text(
+                            _isRemoving
+                                ? 'Removing...'
+                                : 'Remove from Watchlist',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _MyWatchlistView { all, watchlist, watched }
+
+class _MyWatchlistPage extends StatefulWidget {
+  const _MyWatchlistPage({this.view = _MyWatchlistView.all});
+
+  final _MyWatchlistView view;
+
+  @override
+  State<_MyWatchlistPage> createState() => _MyWatchlistPageState();
+}
+
+class _MyWatchlistPageState extends State<_MyWatchlistPage> {
+  bool _isLoading = true;
+  String? _error;
+  List<WatchlistItem> _items = <WatchlistItem>[];
+  bool _changed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final List<WatchlistItem> items = await AuthApi.fetchMyWatchlist();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _items = items;
+      });
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = 'Could not load your watchlist right now.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _markWatched(WatchlistItem item) async {
+    try {
+      final WatchlistItem updated = await AuthApi.updateWatchlistItem(
+        id: item.id,
+        status: 'completed',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _changed = true;
+        _items = _items
+            .map((WatchlistItem i) => i.id == updated.id ? updated : i)
+            .toList();
+      });
+      _showSnackBar('Moved to Watched.');
+    } on AuthApiException catch (error) {
+      _showSnackBar(error.message);
+    } catch (_) {
+      _showSnackBar('Could not update watchlist right now.');
+    }
+  }
+
+  Future<void> _remove(WatchlistItem item) async {
+    try {
+      await AuthApi.deleteWatchlistItem(item.id);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _changed = true;
+        _items = _items.where((WatchlistItem i) => i.id != item.id).toList();
+      });
+      _showSnackBar('Removed from your lists.');
+    } on AuthApiException catch (error) {
+      _showSnackBar(error.message);
+    } catch (_) {
+      _showSnackBar('Could not update watchlist right now.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<WatchlistItem> watchlist = _items
+        .where((WatchlistItem item) => item.status != 'completed')
+        .toList();
+    final List<WatchlistItem> watched = _items
+        .where((WatchlistItem item) => item.status == 'completed')
+        .toList();
+
+    final bool showWatchlist = widget.view != _MyWatchlistView.watched;
+    final bool showWatched = widget.view != _MyWatchlistView.watchlist;
+    final String title = widget.view == _MyWatchlistView.watchlist
+        ? 'Want to Watch'
+        : widget.view == _MyWatchlistView.watched
+        ? 'Already Watched'
+        : 'My Watchlist';
+
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_changed);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+              ? ListView(
+                  children: [
+                    const SizedBox(height: 120),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFFB91C1C),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ],
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    if (showWatchlist) ...[
+                      const Text(
+                        'Watchlist',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (watchlist.isEmpty)
+                        const Text(
+                          'No titles in your watchlist.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF6B7280),
+                          ),
+                        )
+                      else
+                        ...watchlist.map(
+                          (WatchlistItem item) => _WatchlistItemCard(
+                            item: item,
+                            primaryLabel: 'Mark Watched',
+                            onPrimary: () => _markWatched(item),
+                            secondaryLabel: 'Remove',
+                            onSecondary: () => _remove(item),
+                          ),
+                        ),
+                    ],
+                    if (showWatchlist && showWatched)
+                      const SizedBox(height: 24),
+                    if (showWatched) ...[
+                      const Text(
+                        'Watched',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (watched.isEmpty)
+                        const Text(
+                          'No watched titles yet.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF6B7280),
+                          ),
+                        )
+                      else
+                        ...watched.map(
+                          (WatchlistItem item) => _WatchlistItemCard(
+                            item: item,
+                            primaryLabel: null,
+                            onPrimary: null,
+                            secondaryLabel: 'Remove',
+                            onSecondary: () => _remove(item),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WatchlistItemCard extends StatelessWidget {
+  const _WatchlistItemCard({
+    required this.item,
+    required this.primaryLabel,
+    required this.onPrimary,
+    required this.secondaryLabel,
+    required this.onSecondary,
+  });
+
+  final WatchlistItem item;
+  final String? primaryLabel;
+  final VoidCallback? onPrimary;
+  final String secondaryLabel;
+  final VoidCallback onSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasPoster = item.poster.trim().isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: hasPoster
+                  ? Image.network(
+                      item.poster,
+                      width: 58,
+                      height: 84,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(Icons.movie),
+                    )
+                  : const SizedBox(
+                      width: 58,
+                      height: 84,
+                      child: Icon(Icons.movie),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title.isEmpty ? item.imdbID : item.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (primaryLabel != null && onPrimary != null) ...[
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: onPrimary,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF101114),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(primaryLabel!),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: onSecondary,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF3F4F6),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            textStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            ),
+                          ),
+                          child: Text(secondaryLabel),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

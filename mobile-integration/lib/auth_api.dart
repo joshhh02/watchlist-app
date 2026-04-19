@@ -624,6 +624,64 @@ class AuthApi {
     }
   }
 
+  static Future<WatchlistItem> updateWatchlistItem({
+    required String id,
+    String? status,
+    int? userRating,
+  }) async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to update your watchlist.');
+    }
+
+    final String trimmed = id.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing watchlist item id.');
+    }
+
+    final Map<String, dynamic> body = <String, dynamic>{};
+    if (status != null) {
+      body['status'] = status;
+    }
+    if (userRating != null) {
+      body['userRating'] = userRating;
+    }
+    if (body.isEmpty) {
+      throw AuthApiException('No watchlist updates were provided.');
+    }
+
+    try {
+      final http.Response response = await http
+          .put(
+            _watchlistItemUri(trimmed),
+            headers: _headers(json: true, token: token),
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final dynamic data = payload['data'];
+        if (data is Map) {
+          return WatchlistItem.fromJson(Map<String, dynamic>.from(data));
+        }
+        throw AuthApiException('Updated watchlist item.');
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to update watchlist item.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
   static Future<AuthResult> _postAuth(
     Uri uri,
     Map<String, dynamic> body,
