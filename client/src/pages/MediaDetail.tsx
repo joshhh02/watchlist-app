@@ -82,7 +82,12 @@ const MediaDetail = () => {
   const handleAddToWatchlist = async () => {
     if (!id) return;
     try {
-      await addToWatchlist({ imdbID: id, status: 'plan_to_watch' });
+      await addToWatchlist({
+        imdbID: id,
+        status: 'plan_to_watch',
+        title: media?.title,
+        poster: media?.poster,
+      });
       setWatchlistMsg('Added to watchlist!');
     } catch (err: unknown) {
       const axiosError = err as any;

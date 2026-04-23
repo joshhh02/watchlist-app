@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/watchlist.css';
 
-import { getMyWatchlist, updateWatchlistItem } from '../api/mediaApi';
+import { getMyWatchlist, updateWatchlistItem, deleteWatchlistItem } from '../api/mediaApi';
 import { AuthContext } from '../context/AuthContext';
 
 type WatchlistItem = {
@@ -22,6 +22,17 @@ const STATUS_COLORS: Record<string, string> = {
   completed: '#28a745',
 };
 
+const hasUsablePoster = (poster?: string) => {
+  if (!poster) return false;
+  if (poster === 'N/A') return false;
+  return /^https?:\/\//i.test(poster);
+};
+
+const getDisplayTitle = (item: WatchlistItem) => {
+  const trimmedTitle = item.title?.trim();
+  return trimmedTitle || item.imdbID || 'Unknown Title';
+};
+
 const getStarValue = (index: number, e: React.MouseEvent) => {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
   const isHalf = e.clientX - rect.left < rect.width / 2;
@@ -31,6 +42,8 @@ const getStarValue = (index: number, e: React.MouseEvent) => {
 const Watchlist = () => {
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const context = useContext(AuthContext);
   const userId = context?.user?._id;
@@ -75,6 +88,23 @@ const Watchlist = () => {
       );
     } catch (err) {
       console.error('Update failed:', err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      setDeletingId(id);
+      await deleteWatchlistItem(id);
+      setWatchlistItems((prev) => prev.filter((item) => item._id !== id));
+      setImageErrors((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } catch (err) {
+      console.error('Delete failed:', err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -130,11 +160,21 @@ const Watchlist = () => {
         <div className="watchlist-grid">
           {watchlistItems.map((item) => (
             <div key={item._id} className="watchlist-item">
-              <h3>{item.title}</h3>
+              <h3>{getDisplayTitle(item)}</h3>
 
-              {/* POSTER (assumed already stored in DB) */}
-              {item.poster && (
-                <img src={item.poster} alt={item.title} />
+              {hasUsablePoster(item.poster) && !imageErrors[item._id] ? (
+                <img
+                  src={item.poster}
+                  alt={getDisplayTitle(item)}
+                  onError={() =>
+                    setImageErrors((prev) => ({
+                      ...prev,
+                      [item._id]: true,
+                    }))
+                  }
+                />
+              ) : (
+                <div className="watchlist-poster-placeholder">No Image</div>
               )}
 
               {/* STATUS */}
@@ -159,8 +199,16 @@ const Watchlist = () => {
               {/* RATING */}
               <div className="rating-container">
                 {renderStars(item.userRating || 0, item._id)}
-                <span>{item.userRating?.toFixed(1)}</span>
+                <span>{typeof item.userRating === 'number' ? item.userRating.toFixed(1) : 'No rating'}</span>
               </div>
+
+              <button
+                className="remove-btn"
+                onClick={() => handleDelete(item._id)}
+                disabled={deletingId === item._id}
+              >
+                {deletingId === item._id ? 'Removing...' : 'Remove'}
+              </button>
             </div>
           ))}
         </div>
