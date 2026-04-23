@@ -12,7 +12,10 @@ import { OmdbSearchResult } from '../api/mediaApi';
 interface MediaCardProps {
   media: OmdbSearchResult;
   onViewDetails: (imdbID: string) => void;
-  onAddToWatchlist?: (imdbID: string) => Promise<string>;
+  onAddToWatchlist?: (
+    imdbID: string,
+    mediaMeta?: { title?: string; poster?: string }
+  ) => Promise<string>;
 }
 
 const MediaCard = ({ media, onViewDetails, onAddToWatchlist }: MediaCardProps) => {
@@ -28,7 +31,10 @@ const MediaCard = ({ media, onViewDetails, onAddToWatchlist }: MediaCardProps) =
   const handleAdd = async () => {
     if (!onAddToWatchlist) return;
     setAdding(true);
-    const msg = await onAddToWatchlist(media.imdbID);
+    const msg = await onAddToWatchlist(media.imdbID, {
+      title: media.title,
+      poster: media.poster,
+    });
     setFeedback(msg);
     setAdding(false);
     setTimeout(() => setFeedback(''), 3000);

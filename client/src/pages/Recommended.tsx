@@ -11,7 +11,10 @@ const GenreSection = ({
   onViewDetails,
 }: {
   genre: string;
-  onAddToWatchlist?: (id: string) => Promise<string>;
+  onAddToWatchlist?: (
+    id: string,
+    mediaMeta?: { title?: string; poster?: string }
+  ) => Promise<string>;
   onViewDetails: (id: string) => void;
 }) => {
   const [results, setResults] = useState<OmdbSearchResult[]>([]);
@@ -75,9 +78,17 @@ const RecommendationsPage = () => {
     const user = context?.user;
     const genres: string[] = state?.genres ?? [];
 
-    const handleAddToWatchlist = async (imdbID: string): Promise<string> => {
+    const handleAddToWatchlist = async (
+      imdbID: string,
+      mediaMeta?: { title?: string; poster?: string }
+    ): Promise<string> => {
     try {
-      await addToWatchlist({ imdbID, status: 'plan_to_watch' });
+      await addToWatchlist({
+        imdbID,
+        status: 'plan_to_watch',
+        title: mediaMeta?.title,
+        poster: mediaMeta?.poster,
+      });
       return 'Added to watchlist!';
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to add';
