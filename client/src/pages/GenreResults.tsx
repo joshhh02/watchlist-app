@@ -66,14 +66,17 @@ const GenreResults = () => {
     fetchPage(next, true);
   };
 
-  const handleAddToWatchlist = async (imdbID: string): Promise<string> => {
+  const handleAddToWatchlist = async (
+    imdbID: string,
+    mediaMeta?: { title?: string; poster?: string }
+  ): Promise<string> => {
     const found = results.find((r) => r.imdbID === imdbID);
     try {
       await addToWatchlist({
         imdbID,
         status: 'plan_to_watch',
-        title: found?.title,
-        poster: found?.poster,
+        title: mediaMeta?.title || found?.title,
+        poster: mediaMeta?.poster || found?.poster,
       });
       return 'Added to watchlist!';
     } catch (err: any) {

@@ -14,7 +14,7 @@ const GENRE_TILES = [
   { label: 'Romance',     gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #f8d97d 100%)'},
   { label: 'Documentary', gradient: 'radial-gradient(circle at 60% 50%, #26d0ce 20%, #c8f7c5 70%, #d0f0e0 100%)'},
   { label: 'Thriller',    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'},
-  { label: 'Horror',      gradient: 'linear-gradient(135deg, #434343 0%, #471c1c 100%)'},
+  { label: 'Horror',      gradient: 'linear-gradient(135deg, #9d9d9d 0%, #8d3838 100%)'},
   { label: 'Animation',   gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
   { label: 'Crime',       gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'},
   { label: 'Fantasy',     gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)'},
@@ -29,6 +29,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
@@ -56,9 +57,12 @@ const Register = () => {
     // Attempt registration
     setLoading(true);
     try {
-      await registerUser(username, email, password);
+      const response = await registerUser(username, email, password);
       // Note: With email verification, backend won't return token yet
       // Show verification message instead
+      setRegistrationMessage(
+        response.data?.message || 'Verification email sent! Please check your inbox.'
+      );
       setSubmitted(true);
     } catch (err: unknown) {
       const axiosError = err as any;
@@ -194,7 +198,7 @@ const Register = () => {
 
         ) : (
           <div className="auth-success">
-            <p>Verification email sent! Please check your email and click the link to verify your account.</p>
+            <p>{registrationMessage || 'Verification email sent! Please check your email and click the link to verify your account.'}</p>
             <p>If you did not receive it, click the button below to resend.</p>
             {resendError && <div className="auth-error">{resendError}</div>}
             {resendMessage && <div className="auth-success">{resendMessage}</div>}
