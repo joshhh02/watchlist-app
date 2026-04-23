@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../auth_api.dart';
@@ -31,6 +33,12 @@ class _MainFeedPageState extends State<MainFeedPage> {
   void _logout() {
     AuthSession.clear();
     Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  }
+
+  void _openSearch() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const _MediaSearchPage()));
   }
 
   @override
@@ -104,6 +112,11 @@ class _MainFeedPageState extends State<MainFeedPage> {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Search',
+            icon: const Icon(Icons.search),
+            onPressed: _openSearch,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Column(
@@ -190,8 +203,9 @@ class _MainFeedPageState extends State<MainFeedPage> {
               )
             : _feedItems.isEmpty
             ? ListView(
-                padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
                 children: [
+                  const SizedBox(height: 24),
                   Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(minWidth: 160),
@@ -259,57 +273,304 @@ class _MainFeedPageState extends State<MainFeedPage> {
                     ),
                 ],
               )
-            : ListView.separated(
+            : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
-                itemBuilder: (BuildContext context, int index) {
-                  if (index == 0) {
-                    return Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minWidth: 160),
-                        child: ElevatedButton(
-                          onPressed: _openDiscover,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF3F4F6),
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 14,
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: Color(0xFFD1D5DB)),
-                            ),
+                children: [
+                  const SizedBox(height: 24),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 160),
+                      child: ElevatedButton(
+                        onPressed: _openDiscover,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF3F4F6),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
                           ),
-                          child: const Text('Discover'),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                          ),
                         ),
+                        child: const Text('Discover'),
                       ),
-                    );
-                  }
-
-                  if (index == 1) {
-                    return const Text(
-                      'Friends Feed',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
-                      ),
-                    );
-                  }
-
-                  final FriendFeedItem item = _feedItems[index - 2];
-                  return _FeedStatusCard(item: item);
-                },
-                separatorBuilder: (_, index) => index == 0
-                    ? const SizedBox(height: 20)
-                    : const SizedBox(height: 12),
-                itemCount: _feedItems.length + 2,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Friends Feed',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...() {
+                    final List<Widget> items = <Widget>[];
+                    for (int i = 0; i < _feedItems.length; i++) {
+                      items.add(_FeedStatusCard(item: _feedItems[i]));
+                      if (i != _feedItems.length - 1) {
+                        items.add(const SizedBox(height: 12));
+                      }
+                    }
+                    return items;
+                  }(),
+                ],
               ),
+      ),
+    );
+  }
+}
+
+class _MediaSearchPage extends StatefulWidget {
+  const _MediaSearchPage();
+
+  @override
+  State<_MediaSearchPage> createState() => _MediaSearchPageState();
+}
+
+class _MediaSearchPageState extends State<_MediaSearchPage> {
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  bool _isSearching = false;
+  String? _searchError;
+  List<RecommendedMovie> _searchResults = <RecommendedMovie>[];
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      _performSearch(value);
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchDebounce?.cancel();
+    setState(() {
+      _searchResults = <RecommendedMovie>[];
+      _searchError = null;
+      _isSearching = false;
+    });
+  }
+
+  Future<void> _performSearch(String query) async {
+    final String trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searchResults = <RecommendedMovie>[];
+        _searchError = null;
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _searchError = null;
+    });
+
+    try {
+      final List<RecommendedMovie> results = await AuthApi.searchMedia(trimmed);
+      final String needle = trimmed.toLowerCase();
+      final List<RecommendedMovie> filtered = results.where((
+        RecommendedMovie movie,
+      ) {
+        final String title = movie.title.toLowerCase();
+        return title.contains(needle);
+      }).toList();
+
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searchResults = filtered;
+      });
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searchError = error.message;
+        _searchResults = <RecommendedMovie>[];
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searchError = 'Could not search right now.';
+        _searchResults = <RecommendedMovie>[];
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  List<Widget> _buildSearchResultsSection() {
+    final bool hasQuery = _searchController.text.trim().isNotEmpty;
+    if (!hasQuery) {
+      return const <Widget>[
+        SizedBox(height: 24),
+        Center(
+          child: Text(
+            'Start typing to search movies and shows.',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    if (_searchError != null) {
+      return <Widget>[];
+    }
+
+    if (!_isSearching && _searchResults.isEmpty) {
+      return const <Widget>[
+        SizedBox(height: 16),
+        Text(
+          'No matches found.',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+      ];
+    }
+
+    return <Widget>[
+      const SizedBox(height: 16),
+      const Text(
+        'Search results',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF111827),
+        ),
+      ),
+      const SizedBox(height: 12),
+      ..._searchResults.map(
+        (RecommendedMovie movie) => _RecommendationCard(movie: movie),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasQuery = _searchController.text.trim().isNotEmpty;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Search',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              textInputAction: TextInputAction.search,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Search movies and shows',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: hasQuery
+                    ? IconButton(
+                        onPressed: _clearSearch,
+                        icon: const Icon(Icons.close),
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFFF3F4F6),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+            ),
+          ),
+          if (_isSearching)
+            const Padding(
+              padding: EdgeInsets.only(left: 16, right: 16, bottom: 8),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Searching...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (_searchError != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+              child: Text(
+                _searchError!,
+                style: const TextStyle(
+                  color: Color(0xFFB91C1C),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _performSearch(_searchController.text),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                children: _buildSearchResultsSection(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

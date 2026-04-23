@@ -482,6 +482,75 @@ class AuthApi {
     }
   }
 
+  static Future<List<RecommendedMovie>> searchMedia(String query) async {
+    final String trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return <RecommendedMovie>[];
+    }
+
+    final List<String> types = <String>['movie', 'series'];
+    final Set<String> seenIds = <String>{};
+    final List<RecommendedMovie> results = <RecommendedMovie>[];
+    AuthApiException? lastError;
+
+    for (final String type in types) {
+      try {
+        final Uri uri = _mediaSearchUri.replace(
+          queryParameters: <String, String>{'title': trimmed, 'type': type},
+        );
+
+        final http.Response response = await http
+            .get(uri, headers: _headers())
+            .timeout(const Duration(seconds: 15));
+
+        if (response.statusCode == 404) {
+          continue;
+        }
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          final Map<String, dynamic> payload = _decodeJson(response.body);
+          final String message =
+              payload['message']?.toString() ?? 'Failed to search media.';
+          throw AuthApiException(message);
+        }
+
+        final Map<String, dynamic> payload = _decodeJson(response.body);
+        final dynamic rawResults = payload['results'];
+        if (rawResults is! List) {
+          continue;
+        }
+
+        for (final dynamic item in rawResults.whereType<Map>()) {
+          final RecommendedMovie movie = RecommendedMovie.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          );
+          if (movie.imdbID.isEmpty || seenIds.contains(movie.imdbID)) {
+            continue;
+          }
+
+          seenIds.add(movie.imdbID);
+          results.add(movie);
+        }
+      } on AuthApiException catch (error) {
+        lastError = error;
+      } on TimeoutException {
+        lastError = AuthApiException(
+          'Request timeout. Server is not responding.',
+        );
+      } catch (_) {
+        lastError = AuthApiException(
+          'Unable to connect to server. Please check your connection and try again.',
+        );
+      }
+    }
+
+    if (results.isEmpty && lastError != null) {
+      throw lastError;
+    }
+
+    return results;
+  }
+
   static Future<List<RecommendedMovie>> fetchRecommendedMoviesByGenres(
     List<String> genres,
   ) async {
