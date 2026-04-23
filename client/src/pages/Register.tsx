@@ -1,9 +1,9 @@
 // Register.tsx  (route: /signup)
 
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser, resendVerificationEmail } from '../api/mediaApi';
-import { AuthContext } from '../context/AuthContext';
+import { isEmailFormatValid, isPasswordStrong, passwordStrengthChecks } from '../utils/validation';
 import '../styles/auth.css';
 
 const GENRE_TILES = [
@@ -21,15 +21,6 @@ const GENRE_TILES = [
   { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)'},
 ];
 
-// Password strength checks
-const checks = [
-  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
-  { label: 'One uppercase letter (A-Z)', test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter (a-z)', test: (p: string) => /[a-z]/.test(p) },
-  { label: 'One number (0-9)', test: (p: string) => /\d/.test(p) },
-  { label: 'One special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p) },
-];
-
 const Register = () => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -42,18 +33,20 @@ const Register = () => {
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
   const [isVisible, setIsVisible] = useState(false);
-  const context = useContext(AuthContext);
   const navigate = useNavigate();
+  const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
 
-  if (!context) return <div>Loading...</div>;
-  const { login } = context;
-
-  const allPassed = checks.every((c) => c.test(password));
+  const allPassed = isPasswordStrong(password);
 
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+
+    if (!isEmailFormatValid(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
 
     if (!allPassed) {
       setError('Password does not meet all requirements.');
@@ -63,10 +56,8 @@ const Register = () => {
     // Attempt registration
     setLoading(true);
     try {
-      const response = await registerUser(username, email, password);
+      await registerUser(username, email, password);
       // Note: With email verification, backend won't return token yet
-      // const { user, token } = response.data;
-      // login(user, token);
       // Show verification message instead
       setSubmitted(true);
     } catch (err: unknown) {
@@ -81,6 +72,12 @@ const Register = () => {
   const handleResend = async () => {
     setResendError('');
     setResendMessage('');
+
+    if (!isEmailFormatValid(email)) {
+      setResendError('Please enter a valid email address.');
+      return;
+    }
+
     setResendLoading(true);
 
     try {
@@ -94,22 +91,19 @@ const Register = () => {
     }
   };
 
-  /* Genre selection*/
-const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
+  const handleClick = (label: string) => {
+    setSelectedGenres((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  };
 
-const handleClick = (label: string) => {
-  setSelectedGenres(prev => {
-    const next = new Set(prev);
-    if (next.has(label)) {
-      next.delete(label);
-    } else {
-      next.add(label);
-    }
-    return next;
-  });
-};
-
-const selected = Array.from(selectedGenres);
+  const selected = Array.from(selectedGenres);
 
   return (
     <div className="auth-page signup-page">
@@ -183,7 +177,7 @@ const selected = Array.from(selectedGenres);
               {/* Password strength checklist — only shown when user starts typing */}
               {password.length > 0 && (
                 <ul className="pw-checklist">
-                  {checks.map((c) => (
+                  {passwordStrengthChecks.map((c) => (
                     <li key={c.label} className={c.test(password) ? 'pw-check-pass' : 'pw-check-fail'}>
                       <span className="pw-check-icon">{c.test(password) ? '✓' : '✗'}</span>
                       {c.label}
